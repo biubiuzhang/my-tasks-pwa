@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0ea5e9" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+  <title>My Tasks</title>
+  <style>
+    /* --- Styles omitted for brevity --- */
+    /* This will include all the styling for layout, tabs, buttons, dialog, and dark theme */
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="topbar">
+        <div class="title">My Tasks</div>
+        <div class="search">
+          <input id="q" placeholder="Search tasks, tags…" />
+        </div>
+        <button class="btn" id="btnExport">Export</button>
+      </div>
+      <div class="tabs">
+        <button class="tab active" data-tab="inbox">Inbox</button>
+        <button class="tab" data-tab="today">Today</button>
+        <button class="tab" data-tab="upcoming">Upcoming</button>
+      </div>
+    </header>
+
+    <main>
+      <section id="list" class="card"></section>
+      <div class="fab"><button class="btn brand" id="btnAdd">＋ Add Task</button></div>
+    </main>
+
+    <footer>
+      <div>Local • Offline-first</div>
+      <div class="spacer"></div>
+      <label><input type="checkbox" id="toggleHideDone" /> Hide done</label>
+      <button class="btn" id="btnImport">Import</button>
+      <input type="file" id="fileImport" accept="application/json" hidden />
+    </footer>
+  </div>
+
+  <dialog id="dlg">
+    <form method="dialog">
+      <div class="dlg-head">
+        <strong id="dlgTitle">New Task</strong>
+        <button class="btn" id="btnClose">✕</button>
+      </div>
+      <div class="dlg-body">
+        <label>Title <input id="f_title" type="text" required /></label>
+        <label>Notes <textarea id="f_notes"></textarea></label>
+        <label>Due <input id="f_due" type="datetime-local" /></label>
+        <label>Priority 
+          <select id="f_pri">
+            <option value="2">Medium</option>
+            <option value="3">High</option>
+            <option value="1">Low</option>
+          </select>
+        </label>
+        <label>Tags (comma-separated) <input id="f_tags" type="text" /></label>
+        <label>Repeat 
+          <select id="f_repeat">
+            <option value="none">None</option>
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+          </select>
+        </label>
+        <div class="toolbar">
+          <button class="btn brand" id="btnSave">Save</button>
+          <button class="btn" id="btnDelete" type="button" hidden>Delete</button>
+          <button class="btn" id="btnSnooze1h" type="button">Snooze +1h</button>
+          <button class="btn" id="btnSnooze1d" type="button">Snooze +1d</button>
+        </div>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
+    // === IndexedDB wrapper ===
+    const DB_NAME = 'tasksdb', DB_STORE = 'tasks', DB_VERSION = 1;
+    function openDB() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = () => {
+          const db = req.result;
+          db.createObjectStore(DB_STORE, { keyPath: 'id' });
+        };
+        req.onerror = () => reject(req.error);
+        req.onsuccess = () => resolve(req.result);
+      });
+    }
+    async function withStore(mode, fn) {
+      const db = await openDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(DB_STORE, mode);
+        const store = tx.objectStore(DB_STORE);
+        const out = fn(store);
+        tx.oncomplete = () => resolve(out);
+        tx.onerror = () => reject(tx.error);
+      });
+    }
+    const db = {
+      all: () => withStore('readonly', (st) => {
+        return new Promise((res) => {
+          const items = [];
+          st.openCursor().onsuccess = (e) => {
+            const cur = e.target.result;
+            if (cur) { items.push(cur.value); cur.continue(); }
+            else res(items);
+          };
+        });
+      }),
+      put: (t) => withStore('readwrite', (st) => st.put(t)),
+      del: (id) => withStore('readwrite', (st) => st.delete(id))
+    };
+
+    // === Utilities ===
+    const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
+
+    // === State & Rendering ===
+    let state = { tab: 'inbox', hideDone: false, q: '' };
+    const elList = document.getElementById('list');
+
+    async function refresh() {
+      let items = await db.all();
+      elList.innerHTML = items.map(t => 
+        `<div>${t.title}</div>`
+      ).join('');
+    }
+
+    // === Events ===
+    document.getElementById('btnAdd').onclick = () => {
+      const title = prompt('Task title?');
+      if (!title) return;
+      db.put({ id: uid(), title, done: false }).then(refresh);
+    };
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js');
+    }
+    refresh();
+  </script>
+</body>
+</html>
