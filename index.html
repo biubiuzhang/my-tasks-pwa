@@ -356,7 +356,8 @@
       editing = null; dlgTitle.textContent = 'New Task';
       f_title.value = ''; f_notes.value=''; f_due.value=''; f_pri.value='2'; f_tags.value=''; f_repeat.value='none';
       btnDelete.hidden = true; btnSnooze1h.disabled=true; btnSnooze1d.disabled=true;
-      dlg.showModal(); f_title.focus();
+      try { if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.show(); } catch { dlg.show(); }
+      f_title.focus();
     }
 
     async function openEdit(id){
@@ -370,7 +371,7 @@
       f_tags.value = (t.tags||[]).join(', ');
       f_repeat.value = t.repeat||'none';
       btnDelete.hidden = false; btnSnooze1h.disabled=false; btnSnooze1d.disabled=false;
-      dlg.showModal();
+      try { if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.show(); } catch { dlg.show(); }
     }
 
     async function save(){
