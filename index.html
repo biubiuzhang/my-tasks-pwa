@@ -73,7 +73,7 @@
     .tab.active{color:#fff7d6;border-color:#5a4a1b;box-shadow:0 0 0 2px #7c6a20ff inset}
 
     /* ===== Main ===== */
-    main{flex:1;overflow:auto;padding:0 12px 120px} /* extra bottom padding so FAB never overlaps */
+    main{flex:1;overflow:auto;padding:0 12px 140px} /* extra bottom padding so FAB never overlaps */
     .card{background:linear-gradient(180deg,#0f1722,#0b1220);border:1px solid var(--stroke);border-radius:var(--radius);padding:var(--pad);box-shadow:var(--shadow)}
 
     .empty{color:var(--muted);text-align:center;padding:36px}
@@ -90,12 +90,14 @@
     .check.done svg{opacity:1;transform:scale(1)}
 
     .title{font-weight:600}
-    .meta{color:var(--muted);font-size:12px;margin-top:2px}
+    .meta{color:var(--muted);font-size:12px;margin-top:2px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 
     .tag{font-size:12px;color:#fde68a;background:#3c310e;padding:4px 10px;border-radius:999px;margin-right:6px;border:1px solid #5c4a12}
     .due.soon{color:var(--warn)}
     .due.over{color:var(--danger)}
-    .pri{font-weight:800;opacity:.85;margin-left:6px}
+    .delta{font-size:12px;border:1px solid var(--stroke);border-radius:999px;padding:2px 8px;background:#141a24;color:#e5e7eb}
+    .delta.soon{border-color:#5a4a1b;color:#f59e0b;background:#2b230c}
+    .delta.over{border-color:#5a1b1b;color:#ef4444;background:#2b0c0c}
 
     .row-actions{display:flex;gap:6px}
     .iconbtn{background:transparent;border:1px solid var(--stroke);border-radius:10px;padding:8px;color:#cbd5e1}
@@ -274,6 +276,8 @@
     const todayYMD = () => new Date().toISOString().slice(0,10);
     const isSameDay = (a,b) => a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
     const fmtDate = (d) => d ? new Date(d).toLocaleString([], { hour12:false }) : '';
+    const startOfDay = (d)=>{ const x = new Date(d); x.setHours(0,0,0,0); return x; };
+    const daysDiff = (due, now)=> Math.round((startOfDay(due)-startOfDay(now))/(24*3600*1000));
 
     // ===== State =====
     let state = { tab: 'inbox', hideDone: false, q: '', sortBy: 'smart', tag: '' };
@@ -294,16 +298,22 @@
       const overdue = due && due < now && !t.done;
       const soon = due && !overdue && (due - now) < 24*3600*1000;
       const dueHtml = due ? `<span class="due ${overdue? 'over': (soon? 'soon':'')}">Due ${fmtDate(due)}</span>` : '';
+      let deltaHtml = '';
+      if(due){
+        const d = daysDiff(due, now);
+        if(d === 0) deltaHtml = `<span class="delta soon">Today</span>`;
+        else if(d > 0) deltaHtml = `<span class="delta">in ${d} day${d===1?'':'s'}</span>`;
+        else deltaHtml = `<span class="delta over">${-d} day${d===-1?'':'s'} overdue</span>`;
+      }
       const tagsHtml = (t.tags||[]).map(tagSpan).join('');
-      const priHtml = `<span class="pri">${['','L','M','H'][t.pri||2]}</span>`;
       return `
       <div class="task ${t.done? 'done':''}" data-id="${t.id}" role="group" aria-label="Task">
         <div class="check ${t.done? 'done':''}" data-act="toggle" title="Toggle done">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         </div>
         <div>
-          <div class="title">${escapeHtml(t.title)} ${priHtml} ${tagsHtml}</div>
-          <div class="meta">${dueHtml} ${t.notes? ' • '+escapeHtml(t.notes): ''}</div>
+          <div class="title">${escapeHtml(t.title)} ${tagsHtml}</div>
+          <div class="meta">${dueHtml} ${deltaHtml} ${t.notes? ' • '+escapeHtml(t.notes): ''}</div>
         </div>
         <div class="row-actions">
           <button class="iconbtn" data-act="edit" title="Edit">⋯</button>
