@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="apple-touch-icon" href="./icons/do-192.png" />
-  <title>DO</title>
+  <title>待办事项</title>
   <style>
     :root{
       --bg:#0b0f14; --grad:radial-gradient(1000px 400px at 20% -10%, #facc1555, transparent 60%), radial-gradient(1000px 400px at 120% -20%, #fde68a55, transparent 60%), linear-gradient(180deg,#0b0f14,#0b0f14);
@@ -75,36 +75,36 @@
         <div class="brandmark"><span class="dot"></span><span>DO</span></div>
         <div class="search" style="min-width:0">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input id="q" placeholder="Search tasks or #tags" />
+          <input id="q" placeholder="搜索任务或 #标签" />
         </div>
         <div class="controls">
-          <select id="sortBy" class="control" title="Sort by">
-            <option value="smart">Sort: Smart</option>
-            <option value="due">Sort: Due date</option>
-            <option value="priority">Sort: Priority</option>
+          <select id="sortBy" class="control" title="排序方式">
+            <option value="smart">排序: 智能</option>
+            <option value="due">排序: 到期日</option>
+            <option value="priority">排序: 优先级</option>
           </select>
-          <select id="filterTag" class="control" title="Filter by tag">
-            <option value="">All tags</option>
+          <select id="filterTag" class="control" title="按标签过滤">
+            <option value="">所有标签</option>
           </select>
         </div>
-        <button class="btn" id="btnExport" title="Export JSON">Export</button>
+        <button class="btn" id="btnExport" title="导出 JSON">导出</button>
       </div>
       <div class="tabs">
-        <button class="tab active" data-tab="inbox">Inbox</button>
-        <button class="tab" data-tab="today">Today</button>
+        <button class="tab active" data-tab="inbox">收件箱</button>
+        <button class="tab" data-tab="today">今天</button>
       </div>
     </header>
 
     <main>
       <section id="list" class="card"></section>
-      <div class="fab"><button class="btn brand" id="btnAdd">＋ Add Task</button></div>
+      <div class="fab"><button class="btn brand" id="btnAdd">＋ 添加任务</button></div>
     </main>
 
     <footer>
-      <div>Local • Offline‑first</div>
+      <div>本地 • 离线优先</div>
       <div class="spacer"></div>
-      <label><input type="checkbox" id="toggleHideDone" checked /> Hide done</label>
-      <button class="btn" id="btnImport">Import</button>
+      <label><input type="checkbox" id="toggleHideDone" checked /> 隐藏已完成</label>
+      <button class="btn" id="btnImport">导入</button>
       <input type="file" id="fileImport" accept="application/json" hidden />
     </footer>
   </div>
@@ -112,58 +112,58 @@
   <dialog id="dlg">
     <form method="dialog">
       <div class="dlg-head">
-        <strong id="dlgTitle">New Task</strong>
-        <button class="btn iconbtn" id="btnClose" aria-label="Close">✕</button>
+        <strong id="dlgTitle">新任务</strong>
+        <button class="btn iconbtn" id="btnClose" aria-label="关闭">✕</button>
       </div>
       <div class="dlg-body">
         <div class="row">
-          <label>Title</label>
-          <input id="f_title" type="text" placeholder="What’s the task?" required />
+          <label>标题</label>
+          <input id="f_title" type="text" placeholder="任务是什么？" required />
         </div>
         <div class="row">
-          <label>Notes</label>
-          <textarea id="f_notes" placeholder="Details, links…"></textarea>
+          <label>备注</label>
+          <textarea id="f_notes" placeholder="详细信息、链接..."></textarea>
         </div>
         <div class="grid2" id="row_due_pri">
           <div class="row" id="row_due">
-            <label>Due</label>
+            <label>到期日</label>
             <input id="f_due" type="datetime-local" />
           </div>
           <div class="row">
-            <label>Priority</label>
+            <label>优先级</label>
             <select id="f_pri">
-              <option value="2">Medium</option>
-              <option value="3">High</option>
-              <option value="1">Low</option>
+              <option value="2">中</option>
+              <option value="3">高</option>
+              <option value="1">低</option>
             </select>
           </div>
         </div>
         <div class="grid2" id="row_tags_repeat">
           <div class="row">
-            <label>Tags (comma‑separated)</label>
-            <input id="f_tags" type="text" placeholder="work, home" />
+            <label>标签 (逗号分隔)</label>
+            <input id="f_tags" type="text" placeholder="工作, 家庭" />
           </div>
           <div class="row" id="row_repeat">
-            <label>Repeat</label>
+            <label>重复</label>
             <select id="f_repeat">
-              <option value="none">None</option>
-              <option value="daily">Daily</option>
-              <option value="weekly">Weekly</option>
-              <option value="biweekly">Bi‑weekly</option>
-              <option value="monthly">Monthly</option>
+              <option value="none">不重复</option>
+              <option value="daily">每日</option>
+              <option value="weekly">每周</option>
+              <option value="biweekly">每两周</option>
+              <option value="monthly">每月</option>
             </select>
           </div>
         </div>
         <div class="toolbar">
-          <button class="btn brand" id="btnSave">Save</button>
-          <button class="btn" id="btnDelete" type="button" hidden>Delete</button>
+          <button class="btn brand" id="btnSave">保存</button>
+          <button class="btn" id="btnDelete" type="button" hidden>删除</button>
         </div>
       </div>
     </form>
   </dialog>
 
   <script>
-    // ===== IndexedDB Minimal Wrapper =====
+    // ===== IndexedDB Minimal Wrapper (保持不变) =====
     const DB_NAME = 'tasksdb';
     const DB_STORE = 'tasks';
     const DB_VERSION = 1;
@@ -203,18 +203,25 @@
       async del(id){ return withStore('readwrite', (st)=> st.delete(id)); }
     };
 
-    // ===== Utilities =====
+    // ===== Utilities (部分翻译) =====
     const uid = () => Math.random().toString(36).slice(2)+Date.now().toString(36);
     const todayYMD = () => new Date().toISOString().slice(0,10);
     const isSameDay = (a,b) => a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
-    const fmtDate = (d) => d ? new Date(d).toLocaleString([], { hour12:false }) : '';
+    const fmtDate = (d) => d ? new Date(d).toLocaleString('zh-CN', { hour12:false }) : ''; // 使用 'zh-CN'
     const startOfDay = (d)=>{ const x = new Date(d); x.setHours(0,0,0,0); return x; };
     const daysDiff = (due, now)=> Math.round((startOfDay(due)-startOfDay(now))/(24*3600*1000));
 
-    // ===== State =====
+    // 翻译辅助函数
+    function getDeltaText(d) {
+        if (d === 0) return `<span class="delta soon">今天</span>`;
+        if (d > 0) return `<span class="delta">还有 ${d} 天</span>`;
+        return `<span class="delta over">逾期 ${-d} 天</span>`;
+    }
+
+    // ===== State (保持不变) =====
     let state = { tab: 'inbox', hideDone: true, q: '', sortBy: 'smart', tag: '' };
 
-    // ===== DOM =====
+    // ===== DOM (保持不变) =====
     const elList = document.getElementById('list');
     const elTabs = document.querySelectorAll('.tab');
     const elQ = document.getElementById('q');
@@ -224,25 +231,23 @@
 
     state.hideDone = document.getElementById('toggleHideDone').checked;
 
-    // ===== Render =====
+    // ===== Render (部分翻译) =====
     function tagSpan(x){ return `<span class="tag">#${x}</span>`; }
     function renderTask(t){
       const now = new Date();
       const due = t.due ? new Date(t.due) : null;
       const overdue = due && due < now && !t.done;
       const soon = due && !overdue && (due - now) < 24*3600*1000;
-      const dueHtml = due ? `<span class="due ${overdue? 'over': (soon? 'soon':'')}">Due ${fmtDate(due)}</span>` : '';
+      const dueHtml = due ? `<span class="due ${overdue? 'over': (soon? 'soon':'')}">到期 ${fmtDate(due)}</span>` : '';
       let deltaHtml = '';
       if(due){
         const d = daysDiff(due, now);
-        if(d === 0) deltaHtml = `<span class="delta soon">Today</span>`;
-        else if(d > 0) deltaHtml = `<span class="delta">in ${d} day${d===1?'':'s'}</span>`;
-        else deltaHtml = `<span class="delta over">${-d} day${d===-1?'':'s'} overdue</span>`;
+        deltaHtml = getDeltaText(d); // 使用翻译后的文本
       }
       const tagsHtml = (t.tags||[]).map(tagSpan).join('');
       return `
-      <div class="task ${t.done? 'done':''}" data-id="${t.id}" role="group" aria-label="Task">
-        <div class="check ${t.done? 'done':''}" data-act="toggle" title="Toggle done">
+      <div class="task ${t.done? 'done':''}" data-id="${t.id}" role="group" aria-label="任务">
+        <div class="check ${t.done? 'done':''}" data-act="toggle" title="切换完成状态">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         </div>
         <div>
@@ -250,8 +255,8 @@
           <div class="meta">${dueHtml} ${deltaHtml} ${t.notes? ' • '+escapeHtml(t.notes): ''}</div>
         </div>
         <div class="row-actions">
-          <button class="iconbtn" data-act="edit" title="Edit">⋯</button>
-          <button class="iconbtn" data-act="delete" title="Delete">🗑️</button>
+          <button class="iconbtn" data-act="edit" title="编辑">⋯</button>
+          <button class="iconbtn" data-act="delete" title="删除">🗑️</button>
         </div>
       </div>`;
     }
@@ -289,7 +294,7 @@
     function populateTagFilter(items){
       const allTags = Array.from(new Set(items.flatMap(t=>t.tags||[]))).sort((a,b)=>a.localeCompare(b));
       const current = elFilterTag.value;
-      elFilterTag.innerHTML = `<option value="">All tags</option>` + allTags.map(t=>`<option value="${t}">#${t}</option>`).join('');
+      elFilterTag.innerHTML = `<option value="">所有标签</option>` + allTags.map(t=>`<option value="${t}">#${t}</option>`).join('');
       if(allTags.includes(current)) elFilterTag.value = current; else elFilterTag.value = '';
     }
 
@@ -327,10 +332,10 @@
       });
 
       sortItems(items);
-      elList.innerHTML = items.length ? items.map(renderTask).join('') : `<div class="empty">No tasks here. Tap <b>＋ Add Task</b> to create one.</div>`;
+      elList.innerHTML = items.length ? items.map(renderTask).join('') : `<div class="empty">这里没有任务。点击 <b>＋ 添加任务</b> 来创建一个。</div>`;
     }
 
-    // ===== Dialog controls =====
+    // ===== Dialog controls (部分翻译) =====
     const dlg = document.getElementById('dlg');
     const dlgTitle = document.getElementById('dlgTitle');
     const f_title = document.getElementById('f_title');
@@ -352,7 +357,7 @@
     }
 
     function openNew(){
-      editing = null; dlgTitle.textContent = state.tab==='today' ? 'New Today Item' : 'New Task';
+      editing = null; dlgTitle.textContent = state.tab==='today' ? '新的“今天”项' : '新任务';
       f_title.value = ''; f_notes.value=''; f_due.value=''; f_pri.value='2'; f_tags.value=''; f_repeat.value='none';
       setDialogForTab();
       try { if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.show(); } catch { dlg.show(); }
@@ -362,7 +367,7 @@
     async function openEdit(id){
       const items = await db.all();
       const t = items.find(x=>x.id===id); if(!t) return;
-      editing = id; dlgTitle.textContent = 'Edit';
+      editing = id; dlgTitle.textContent = '编辑';
       f_title.value = t.title || '';
       f_notes.value = t.notes || '';
       f_due.value = t.due ? new Date(t.due).toISOString().slice(0,16) : '';
@@ -408,7 +413,7 @@
       await db.put(t); refresh();
     }
 
-    // ===== Events =====
+    // ===== Events (部分翻译) =====
     document.getElementById('btnAdd').addEventListener('click', openNew);
     document.getElementById('btnExport').addEventListener('click', async ()=>{
       const items = await db.all(); const blob = new Blob([JSON.stringify(items,null,2)], {type:'application/json'});
@@ -421,7 +426,7 @@
       const items = JSON.parse(text);
       if(Array.isArray(items)){
         for(const t of items){ if(!t.id) t.id = uid(); if(!t.list) t.list='inbox'; await db.put(t); }
-        refresh(); alert('Imported '+items.length+' tasks');
+        refresh(); alert('成功导入 '+items.length+' 个任务'); // 翻译
       }
     });
 
@@ -440,7 +445,7 @@
       if(!taskEl) return;
       const id = taskEl.dataset.id;
       if(e.target.closest('[data-act="toggle"]')){ await toggleDone(id); return; }
-      if(e.target.closest('[data-act="delete"]')){ if(confirm('Delete this task?')) { await db.del(id); refresh(); } return; }
+      if(e.target.closest('[data-act="delete"]')){ if(confirm('确定删除此任务吗？')) { await db.del(id); refresh(); } return; } // 翻译
       if(e.target.closest('[data-act="edit"]')){ openEdit(id); return; }
     });
 
@@ -448,10 +453,10 @@
     document.getElementById('btnSave').addEventListener('click', (e)=>{ e.preventDefault(); save(); });
     document.getElementById('btnDelete').addEventListener('click', remove);
 
-    // ===== PWA install + SW =====
+    // ===== PWA install + SW (保持不变) =====
     if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js'); }
 
-    // ===== Boot =====
+    // ===== Boot (保持不变) =====
     (async ()=>{ await purgeTodayIfNeeded(); refresh(); })();
   </script>
 </body>
