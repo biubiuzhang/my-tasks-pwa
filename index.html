@@ -1,463 +1,401 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#facc15" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Smart Calendar — 2‑Week Time Tracker</title>
   <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="apple-touch-icon" href="./icons/do-192.png" />
-  <title>待办事项</title>
+  <link rel="icon" href="./icons/icon-192.png" />
   <style>
-    :root{
-      --bg:#0b0f14; --grad:radial-gradient(1000px 400px at 20% -10%, #facc1555, transparent 60%), radial-gradient(1000px 400px at 120% -20%, #fde68a55, transparent 60%), linear-gradient(180deg,#0b0f14,#0b0f14);
-      --pane:#0f1722; --pane-2:#0c1420; --stroke:#0f2134; --ring:#1f2937; --text:#e5e7eb; --muted:#9aa4b2; --sub:#cbd5e1;
-      --brand:#facc15; --brand-2:#fde68a; --ok:#10b981; --warn:#f59e0b; --danger:#ef4444;
-      --radius:18px; --shadow:0 20px 50px rgba(0,0,0,.45), 0 1px 0 rgba(255,255,255,.03) inset; --shadow-soft:0 10px 30px rgba(0,0,0,.35);
-      --pad:14px; --gap:12px; --blur:12px; --speed:.18s;
-    }
-    *{box-sizing:border-box} html,body{height:100%}
-    body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
-    .app{max-width:820px;margin:0 auto;display:flex;flex-direction:column;height:100%;background:var(--grad);padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
-    header{position:sticky;top:0;z-index:5;backdrop-filter:blur(var(--blur));background:linear-gradient(180deg,rgba(11,15,20,.9),rgba(11,15,20,.65) 60%,transparent)}
-    .topbar{display:flex;gap:10px;align-items:center;padding:14px 12px 10px;flex-wrap:wrap}
-    .brandmark{display:flex;align-items:center;gap:10px;font-weight:800}
-    .brandmark .dot{width:12px;height:12px;border-radius:50%;background:linear-gradient(180deg,var(--brand-2),var(--brand));box-shadow:0 0 0 4px #3a2f0b inset,0 0 20px #fde68a66}
-    .search{flex:1 1 220px;display:flex;align-items:center;gap:10px;background:rgba(15,23,34,.7);border:1px solid var(--stroke);border-radius:999px;padding:10px 14px;box-shadow:var(--shadow-soft)}
-    .search input{flex:1;background:transparent;border:0;outline:0;color:var(--text)}
-    .controls{display:flex;gap:8px;align-items:center}
-    select.control{appearance:none;background:#0b1220;color:var(--text);border:1px solid var(--stroke);border-radius:10px;padding:10px 12px}
-    .btn{appearance:none;border:1px solid var(--stroke);background:linear-gradient(180deg,#0f1722,#0b1220);color:var(--text);padding:10px 14px;border-radius:12px;box-shadow:var(--shadow-soft);transition:transform var(--speed) ease,border-color var(--speed) ease,background var(--speed) ease}
-    .btn:hover{border-color:#203245} .btn:active{transform:translateY(1px)} .btn.brand{border:none;background:linear-gradient(180deg,var(--brand-2),var(--brand));color:#2b1f06}
-    .tabs{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:0 12px 12px}
-    .tab{background:linear-gradient(180deg,#0f1722,#0b1220);border:1px solid var(--stroke);border-radius:12px;padding:10px;text-align:center;color:#9fb0c2;transition:all var(--speed) ease}
-    .tab.active{color:#fff7d6;border-color:#5a4a1b;box-shadow:0 0 0 2px #7c6a20ff inset}
-    main{flex:1;overflow:auto;padding:0 12px 140px}
-    .card{background:linear-gradient(180deg,#0f1722,#0b1220);border:1px solid var(--stroke);border-radius:var(--radius);padding:var(--pad);box-shadow:var(--shadow)}
-    .empty{color:var(--muted);text-align:center;padding:36px}
-    .task{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;padding:12px;border-radius:14px;border:1px solid transparent;transition:border-color var(--speed) ease,background var(--speed) ease}
-    .task + .task{margin-top:10px} .task:hover{border-color:#3b300d;background:rgba(59,48,13,.18)} .task.done{opacity:.55}
-    .check{width:24px;height:24px;border-radius:50%;border:2px solid #4b3d12;display:grid;place-items:center;cursor:pointer;transition:all var(--speed) ease}
-    .check svg{opacity:0;transform:scale(.6);transition:all var(--speed) ease}
-    .check.done{background:var(--ok);border-color:var(--ok)} .check.done svg{opacity:1;transform:scale(1)}
-    .title{font-weight:600}
-    .meta{color:var(--muted);font-size:12px;margin-top:2px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-    .tag{font-size:12px;color:#fde68a;background:#3c310e;padding:4px 10px;border-radius:999px;margin-right:6px;border:1px solid #5c4a12}
-    .due.soon{color:var(--warn)} .due.over{color:var(--danger)}
-    .delta{font-size:12px;border:1px solid var(--stroke);border-radius:999px;padding:2px 8px;background:#141a24;color:#e5e7eb}
-    .delta.soon{border-color:#5a4a1b;color:#f59e0b;background:#2b230c}
-    .delta.over{border-color:#5a1b1b;color:#ef4444;background:#2b0c0c}
-    .row-actions{display:flex;gap:6px}
-    .iconbtn{background:transparent;border:1px solid var(--stroke);border-radius:10px;padding:8px;color:#cbd5e1}
-    .iconbtn:hover{border-color:#5c4a12}
-    .fab{position:fixed;right:18px;bottom:calc(80px + env(safe-area-inset-bottom));z-index:1000}
-    .fab .btn{padding:16px 20px;border-radius:999px}
-    dialog{border:1px solid var(--stroke);border-radius:18px;background:var(--pane-2);color:var(--text);padding:0;max-width:680px;width:calc(100% - 24px)}
-    .dlg-head{padding:16px 18px;border-bottom:1px solid var(--stroke);display:flex;justify-content:space-between;align-items:center}
-    .dlg-body{padding:16px;display:grid;gap:12px}
-    .row{display:grid;gap:6px}
-    label{color:var(--sub);font-size:12px}
-    input[type=text],input[type=datetime-local],textarea,select{background:#0b1220;color:var(--text);border:1px solid var(--ring);border-radius:12px;padding:12px;outline:none}
-    input:focus,textarea:focus,select:focus{border-color:#d97706;box-shadow:0 0 0 4px #f59e0b33}
-    textarea{min-height:84px}
-    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    .toolbar{display:flex;gap:8px;flex-wrap:wrap}
-    footer{padding:10px 12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;color:var(--muted)}
-    footer .spacer{flex:1} a{color:#fde68a;text-decoration:none}
-    @media (max-width:560px){.grid2{grid-template-columns:1fr}.topbar{gap:8px}.tabs{gap:8px}.task{gap:10px}}
+    :root{--bg:#f7fafc;--card:#fff;--ink:#0f172a;--muted:#64748b;--ring:#6366f1;--border:#e2e8f0;--chip:#eef2ff}
+    *{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:linear-gradient(#fafafa,#fff)}
+    header{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:16px 20px}
+    h1{font-size:20px;margin:0;color:var(--ink)}
+    .btn{border:1px solid var(--border);background:#fff;border-radius:12px;padding:8px 12px;cursor:pointer}
+    .btn:focus{outline:2px solid var(--ring)}
+    .btn.icon{display:inline-grid;place-items:center;padding:8px;width:36px;height:36px}
+    .wrap{max-width:1200px;margin:0 auto;padding:0 16px 24px}
+    .tabs{display:flex;gap:8px;border-bottom:1px solid var(--border);margin:0 16px}
+    .tab{padding:10px 12px;border:1px solid var(--border);border-bottom:none;border-radius:12px 12px 0 0;background:#fff;cursor:pointer}
+    .tab[aria-selected="true"]{background:var(--chip)}
+    .panel{border:1px solid var(--border);border-radius:16px;padding:16px;background:#fff;margin:0 16px}
+    .toolbar{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-bottom:12px}
+    .range{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px}
+    .day{min-height:160px;border:1px solid var(--border);border-radius:16px;padding:10px;background:#fff;display:flex;flex-direction:column}
+    .day.today{outline:2px solid var(--ring)}
+    .daytop{display:flex;align-items:baseline;justify-content:space-between}
+    .muted{color:var(--muted)}
+    .list{margin-top:8px;display:flex;flex-direction:column;gap:6px;overflow:auto}
+    .entry{display:flex;gap:8px;align-items:flex-start;border:1px solid var(--border);border-radius:12px;padding:8px}
+    .dot{width:10px;height:10px;border-radius:999px;flex:0 0 10px;border:1px solid #0002}
+    .grow{flex:1}
+    .small{font-size:12px}
+    .projects{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+    label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
+    input,select{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:10px}
+    .row{display:flex;gap:10px;align-items:end}
+    .row>*{flex:1}
+    .tag{display:inline-flex;gap:8px;align-items:center}
+    .chip{background:var(--chip);border-radius:999px;padding:2px 8px}
+    .right{margin-left:auto}
+    .footer{display:flex;gap:8px;justify-content:flex-end}
+    .hidden{display:none}
   </style>
 </head>
 <body>
-  <div class="app">
-    <header>
-      <div class="topbar">
-        <div class="brandmark"><span class="dot"></span><span>米妮的待办</span></div>
-        <div class="search" style="min-width:0">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input id="q" placeholder="搜索任务或 #标签" />
-        </div>
-        <div class="controls">
-          <select id="sortBy" class="control" title="排序方式">
-            <option value="smart">排序: 智能</option>
-            <option value="due">排序: 到期日</option>
-            <option value="priority">排序: 优先级</option>
-          </select>
-          <select id="filterTag" class="control" title="按标签过滤">
-            <option value="">所有标签</option>
-          </select>
-        </div>
-        <button class="btn" id="btnExport" title="导出 JSON">导出</button>
-      </div>
-      <div class="tabs">
-        <button class="tab active" data-tab="inbox">收件箱</button>
-        <button class="tab" data-tab="today">今天</button>
-      </div>
-    </header>
+  <header>
+    <h1>📅 Smart Calendar — 2‑Week Time Tracker (Vanilla)</h1>
+    <div>
+      <button class="btn" id="btnExport">Export JSON</button>
+      <label class="btn" for="importFile">Import JSON</label>
+      <input id="importFile" type="file" accept="application/json" class="hidden" />
+    </div>
+  </header>
 
-    <main>
-      <section id="list" class="card"></section>
-      <div class="fab"><button class="btn brand" id="btnAdd">＋ 添加任务</button></div>
-    </main>
+  <div class="wrap">
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" id="tabCal" aria-selected="true">Calendar</button>
+      <button class="tab" role="tab" id="tabTotals" aria-selected="false">Totals</button>
+      <button class="tab" role="tab" id="tabProj" aria-selected="false">Projects</button>
+    </div>
 
-    <footer>
-      <div>本地 • 离线优先</div>
-      <div class="spacer"></div>
-      <label><input type="checkbox" id="toggleHideDone" checked /> 隐藏已完成</label>
-      <button class="btn" id="btnImport">导入</button>
-      <input type="file" id="fileImport" accept="application/json" hidden />
-    </footer>
+    <!-- Calendar Panel -->
+    <section id="panelCal" class="panel" role="tabpanel" aria-labelledby="tabCal">
+      <div class="toolbar">
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn icon" id="prev">◀</button>
+          <button class="btn icon" id="next">▶</button>
+          <button class="btn" id="btnToday">This ISO Week</button>
+          <span class="muted" id="rangeText"></span>
+        </div>
+        <button class="btn" id="addEntryOpen">Add Entry</button>
+      </div>
+      <div class="grid" id="calGrid"></div>
+    </section>
+
+    <!-- Totals Panel -->
+    <section id="panelTotals" class="panel hidden" role="tabpanel" aria-labelledby="tabTotals">
+      <div class="row">
+        <div>
+          <label>Start</label>
+          <input type="date" id="totStart" />
+        </div>
+        <div>
+          <label>End</label>
+          <input type="date" id="totEnd" />
+        </div>
+        <div style="text-align:right">
+          <div class="muted small">Total</div>
+          <div id="totOverall" style="font-weight:600;font-size:20px">0 h</div>
+        </div>
+      </div>
+      <div id="totList" style="margin-top:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px"></div>
+    </section>
+
+    <!-- Projects Panel -->
+    <section id="panelProj" class="panel hidden" role="tabpanel" aria-labelledby="tabProj">
+      <div class="row">
+        <div>
+          <label>Project name</label>
+          <input id="projName" placeholder="e.g., Titan FW" />
+        </div>
+        <div style="flex:0 0 120px">
+          <label>Color</label>
+          <input id="projColor" type="color" value="#22c55e" />
+        </div>
+        <div style="flex:0 0 140px">
+          <button class="btn" id="projAdd">Add Project</button>
+        </div>
+      </div>
+      <div class="projects" id="projList" style="margin-top:12px"></div>
+    </section>
   </div>
 
-  <dialog id="dlg">
-    <form method="dialog">
-      <div class="dlg-head">
-        <strong id="dlgTitle">新任务</strong>
-        <button class="btn iconbtn" id="btnClose" aria-label="关闭">✕</button>
+  <!-- Add/Edit Entry Modal (very small vanilla modal) -->
+  <dialog id="entryDialog" style="border:none;border-radius:16px;padding:16px;max-width:420px;width:90vw">
+    <h3 style="margin:0 0 8px">Add Time Entry</h3>
+    <div class="row">
+      <div>
+        <label>Date</label>
+        <input type="date" id="dlgDate" />
       </div>
-      <div class="dlg-body">
-        <div class="row">
-          <label>标题</label>
-          <input id="f_title" type="text" placeholder="任务是什么？" required />
-        </div>
-        <div class="row">
-          <label>备注</label>
-          <textarea id="f_notes" placeholder="详细信息、链接..."></textarea>
-        </div>
-        <div class="grid2" id="row_due_pri">
-          <div class="row" id="row_due">
-            <label>到期日</label>
-            <input id="f_due" type="datetime-local" />
-          </div>
-          <div class="row">
-            <label>优先级</label>
-            <select id="f_pri">
-              <option value="2">中</option>
-              <option value="3">高</option>
-              <option value="1">低</option>
-            </select>
-          </div>
-        </div>
-        <div class="grid2" id="row_tags_repeat">
-          <div class="row">
-            <label>标签 (逗号分隔)</label>
-            <input id="f_tags" type="text" placeholder="工作, 家庭" />
-          </div>
-          <div class="row" id="row_repeat">
-            <label>重复</label>
-            <select id="f_repeat">
-              <option value="none">不重复</option>
-              <option value="daily">每日</option>
-              <option value="weekly">每周</option>
-              <option value="biweekly">每两周</option>
-              <option value="monthly">每月</option>
-            </select>
-          </div>
-        </div>
-        <div class="toolbar">
-          <button class="btn brand" id="btnSave">保存</button>
-          <button class="btn" id="btnDelete" type="button" hidden>删除</button>
-        </div>
+      <div>
+        <label>Hours</label>
+        <input type="number" id="dlgHours" min="0" step="0.25" value="1" />
       </div>
-    </form>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <div>
+        <label>Project</label>
+        <select id="dlgProject"></select>
+      </div>
+    </div>
+    <div style="margin-top:8px">
+      <label>Note (optional)</label>
+      <input id="dlgNote" placeholder="e.g., PR review" />
+    </div>
+    <div class="footer" style="margin-top:12px">
+      <button class="btn" id="dlgCancel">Cancel</button>
+      <button class="btn" id="dlgSave">Save</button>
+    </div>
   </dialog>
 
   <script>
-    // ===== IndexedDB Minimal Wrapper (保持不变) =====
-    const DB_NAME = 'tasksdb';
-    const DB_STORE = 'tasks';
-    const DB_VERSION = 1;
+  // ===== Data Types & Storage =====
+  const STORAGE_KEY = 'smart-calendar-vanilla-v1';
+  /** @type {{projects: {id:string,name:string,color:string}[], entries: {id:string,date:string,projectId:string,hours:number,note?:string}[]}} */
+  let db = loadDB();
 
-    function openDB(){
-      return new Promise((resolve, reject)=>{
-        const req = indexedDB.open(DB_NAME, DB_VERSION);
-        req.onupgradeneeded = () => {
-          const db = req.result;
-          const store = db.createObjectStore(DB_STORE, { keyPath: 'id' });
-          store.createIndex('by_due', 'due');
-          store.createIndex('by_done', 'done');
-          // no separate store needed; we mark tasks with list: 'inbox' | 'today'
-        };
-        req.onerror = () => reject(req.error);
-        req.onsuccess = () => resolve(req.result);
-      });
+  function loadDB(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return seed();
+      const parsed = JSON.parse(raw);
+      if(!parsed.projects || !parsed.entries) throw new Error('bad');
+      return parsed;
+    }catch(e){return seed();}
+  }
+  function saveDB(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); }
+  function uid(p='id'){ return p + '_' + Math.random().toString(36).slice(2,10); }
+
+  function seed(){
+    const today = new Date();
+    return {
+      projects:[
+        {id:'p1', name:'Titan FW', color:'#22c55e'},
+        {id:'p2', name:'QA Automation', color:'#3b82f6'},
+        {id:'p3', name:'Baby Tracker', color:'#f97316'},
+      ],
+      entries:[
+        {id:uid('e'), date:fmtYMD(addDays(today,-1)), projectId:'p1', hours:2.5, note:'PR review'},
+        {id:uid('e'), date:fmtYMD(addDays(today,-1)), projectId:'p2', hours:1.5, note:'Playwright tests'},
+        {id:uid('e'), date:fmtYMD(today), projectId:'p3', hours:0.75, note:'UI polish'},
+      ]
     }
-    async function withStore(mode, fn){
-      const db = await openDB();
-      return new Promise((resolve, reject)=>{
-        const tx = db.transaction(DB_STORE, mode);
-        const st = tx.objectStore(DB_STORE);
-        const out = fn(st);
-        tx.oncomplete = () => resolve(out);
-        tx.onerror = () => reject(tx.error);
-      });
+  }
+
+  // ===== Date Helpers (ISO week) =====
+  function startOfISOWeek(d){
+    const x = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+    const day = x.getUTCDay();
+    const diff = (day===0?-6:1) - day; // Monday=1
+    x.setUTCDate(x.getUTCDate()+diff);
+    return x;
+  }
+  function addDays(d,n){ const x=new Date(d); x.setUTCDate(x.getUTCDate()+n); return x; }
+  function fmtYMD(d){ return d.toISOString().slice(0,10); }
+  function parseYMD(s){ const [y,m,da]=s.split('-').map(Number); return new Date(Date.UTC(y,m-1,da)); }
+  function humanDate(d){ return d.toLocaleDateString(undefined,{weekday:'short', month:'short', day:'numeric'}); }
+
+  // ===== State & Elements =====
+  let anchor = startOfISOWeek(new Date());
+  const calGrid = document.getElementById('calGrid');
+  const rangeText = document.getElementById('rangeText');
+  const btnPrev = document.getElementById('prev');
+  const btnNext = document.getElementById('next');
+  const btnToday = document.getElementById('btnToday');
+  const addEntryOpen = document.getElementById('addEntryOpen');
+  const entryDialog = document.getElementById('entryDialog');
+  const dlgDate = document.getElementById('dlgDate');
+  const dlgHours = document.getElementById('dlgHours');
+  const dlgProject = document.getElementById('dlgProject');
+  const dlgNote = document.getElementById('dlgNote');
+  const dlgCancel = document.getElementById('dlgCancel');
+  const dlgSave = document.getElementById('dlgSave');
+
+  // Tabs
+  const tabCal = document.getElementById('tabCal');
+  const tabTotals = document.getElementById('tabTotals');
+  const tabProj = document.getElementById('tabProj');
+  const panelCal = document.getElementById('panelCal');
+  const panelTotals = document.getElementById('panelTotals');
+  const panelProj = document.getElementById('panelProj');
+
+  function showPanel(which){
+    const map = {cal:[panelCal, tabCal], totals:[panelTotals, tabTotals], proj:[panelProj, tabProj]};
+    for(const [k,[p,t]] of Object.entries(map)){
+      const sel = (k===which);
+      p.classList.toggle('hidden', !sel);
+      t.setAttribute('aria-selected', sel?'true':'false');
     }
-    const db = {
-      async all(){
-        return withStore('readonly', (st) => new Promise((res)=>{
-          const items=[]; st.openCursor().onsuccess = (e)=>{
-            const cur = e.target.result; if(cur){ items.push(cur.value); cur.continue(); } else res(items); };
-        }));
-      },
-      async put(task){ return withStore('readwrite', (st)=> st.put(task)); },
-      async del(id){ return withStore('readwrite', (st)=> st.delete(id)); }
-    };
+  }
+  tabCal.onclick = ()=> showPanel('cal');
+  tabTotals.onclick = ()=> { showPanel('totals'); renderTotals(); };
+  tabProj.onclick = ()=> { showPanel('proj'); renderProjects(); };
 
-    // ===== Utilities (部分翻译) =====
-    const uid = () => Math.random().toString(36).slice(2)+Date.now().toString(36);
-    const todayYMD = () => new Date().toISOString().slice(0,10);
-    const isSameDay = (a,b) => a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
-    const fmtDate = (d) => d ? new Date(d).toLocaleString('zh-CN', { hour12:false }) : ''; // 使用 'zh-CN'
-    const startOfDay = (d)=>{ const x = new Date(d); x.setHours(0,0,0,0); return x; };
-    const daysDiff = (due, now)=> Math.round((startOfDay(due)-startOfDay(now))/(24*3600*1000));
+  // ===== Calendar Rendering =====
+  function entriesByDate(){
+    const m = {};
+    for(const e of db.entries){ (m[e.date] ||= []).push(e); }
+    return m;
+  }
+  function projectById(){ const m={}; for(const p of db.projects){ m[p.id]=p; } return m; }
+  function sumHours(list){ return Number(list.reduce((a,b)=>a+(b.hours||0),0).toFixed(2)); }
 
-    // 翻译辅助函数
-    function getDeltaText(d) {
-        if (d === 0) return `<span class="delta soon">今天</span>`;
-        if (d > 0) return `<span class="delta">还有 ${d} 天</span>`;
-        return `<span class="delta over">逾期 ${-d} 天</span>`;
-    }
+  function twoWeek(){
+    const start = startOfISOWeek(anchor);
+    return Array.from({length:14},(_,i)=> addDays(start,i));
+  }
 
-    // ===== State (保持不变) =====
-    let state = { tab: 'inbox', hideDone: true, q: '', sortBy: 'smart', tag: '' };
+  function renderCalendar(){
+    const days = twoWeek();
+    rangeText.textContent = humanDate(days[0]) + ' – ' + humanDate(days[13]);
+    const map = entriesByDate();
+    const pmap = projectById();
+    const todayYMD = fmtYMD(new Date());
 
-    // ===== DOM (保持不变) =====
-    const elList = document.getElementById('list');
-    const elTabs = document.querySelectorAll('.tab');
-    const elQ = document.getElementById('q');
-    const elToggleHideDone = document.getElementById('toggleHideDone');
-    const elSortBy = document.getElementById('sortBy');
-    const elFilterTag = document.getElementById('filterTag');
-
-    state.hideDone = document.getElementById('toggleHideDone').checked;
-
-    // ===== Render (部分翻译) =====
-    function tagSpan(x){ return `<span class="tag">#${x}</span>`; }
-    function renderTask(t){
-      const now = new Date();
-      const due = t.due ? new Date(t.due) : null;
-      const overdue = due && due < now && !t.done;
-      const soon = due && !overdue && (due - now) < 24*3600*1000;
-      const dueHtml = due ? `<span class="due ${overdue? 'over': (soon? 'soon':'')}">到期 ${fmtDate(due)}</span>` : '';
-      let deltaHtml = '';
-      if(due){
-        const d = daysDiff(due, now);
-        deltaHtml = getDeltaText(d); // 使用翻译后的文本
-      }
-      const tagsHtml = (t.tags||[]).map(tagSpan).join('');
-      return `
-      <div class="task ${t.done? 'done':''}" data-id="${t.id}" role="group" aria-label="任务">
-        <div class="check ${t.done? 'done':''}" data-act="toggle" title="切换完成状态">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+    calGrid.innerHTML = '';
+    for(const d of days){
+      const ymd = fmtYMD(d);
+      const list = map[ymd] || [];
+      const total = sumHours(list);
+      const dayEl = document.createElement('div');
+      dayEl.className = 'day' + (ymd===todayYMD? ' today':'');
+      dayEl.innerHTML = `
+        <div class="daytop"><div><strong>${humanDate(d)}</strong></div><div class="muted small">${total>0? total+'h':''}</div></div>
+        <div class="list"></div>
+        <div style="margin-top:auto">
+          <button class="btn" data-add="${ymd}">Add Entry</button>
         </div>
-        <div>
-          <div class="title">${escapeHtml(t.title)} ${tagsHtml}</div>
-          <div class="meta">${dueHtml} ${deltaHtml} ${t.notes? ' • '+escapeHtml(t.notes): ''}</div>
-        </div>
-        <div class="row-actions">
-          <button class="iconbtn" data-act="edit" title="编辑">⋯</button>
-          <button class="iconbtn" data-act="delete" title="删除">🗑️</button>
-        </div>
-      </div>`;
-    }
-
-    function escapeHtml(s){
-      return String(s||'').replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
-    }
-
-    function sortItems(items){
-      if(state.sortBy==='due'){
-        return items.sort((a,b)=>{
-          const ad = a.due? new Date(a.due).getTime(): 9e15;
-          const bd = b.due? new Date(b.due).getTime(): 9e15;
-          return ad-bd;
-        });
-      }
-      if(state.sortBy==='priority'){
-        return items.sort((a,b)=>{
-          const ap = -(a.pri||2), bp = -(b.pri||2);
-          if(ap!==bp) return ap-bp;
-          const ad = a.due? new Date(a.due).getTime(): 9e15;
-          const bd = b.due? new Date(b.due).getTime(): 9e15;
-          return ad-bd;
-        });
-      }
-      return items.sort((a,b)=>{
-        const ad = a.due? new Date(a.due).getTime(): 9e15;
-        const bd = b.due? new Date(b.due).getTime(): 9e15;
-        if(ad!==bd) return ad-bd;
-        const ap = -(a.pri||2), bp = -(b.pri||2); if(ap!==bp) return ap-bp;
-        return (a.created||0) - (b.created||0);
-      });
-    }
-
-    function populateTagFilter(items){
-      const allTags = Array.from(new Set(items.flatMap(t=>t.tags||[]))).sort((a,b)=>a.localeCompare(b));
-      const current = elFilterTag.value;
-      elFilterTag.innerHTML = `<option value="">所有标签</option>` + allTags.map(t=>`<option value="${t}">#${t}</option>`).join('');
-      if(allTags.includes(current)) elFilterTag.value = current; else elFilterTag.value = '';
-    }
-
-    // Purge today's list if day changed
-    async function purgeTodayIfNeeded(){
-      const last = localStorage.getItem('lastYMD');
-      const nowY = todayYMD();
-      if(last !== nowY){
-        const all = await db.all();
-        for(const t of all){ if(t.list==='today') await db.del(t.id); }
-        localStorage.setItem('lastYMD', nowY);
-      }
-    }
-
-    async function refresh(){
-      await purgeTodayIfNeeded();
-      let items = await db.all();
-      populateTagFilter(items);
-
-      const now = new Date();
-      items = items.filter(t => {
-        if(state.hideDone && t.done) return false;
-        if(state.tag && !(t.tags||[]).includes(state.tag)) return false;
-        if(state.q){
-          const q = state.q.toLowerCase();
-          const inTags = (t.tags||[]).some(x=>('#'+x).toLowerCase().includes(q));
-          const text = (t.title+' '+(t.notes||'')).toLowerCase().includes(q);
-          if(!(inTags||text)) return false;
+      `;
+      const listEl = dayEl.querySelector('.list');
+      if(list.length===0){
+        const empty = document.createElement('div'); empty.className='small muted'; empty.textContent='No entries'; listEl.appendChild(empty);
+      } else {
+        for(const e of list){
+          const row = document.createElement('div');
+          row.className='entry';
+          row.innerHTML = `
+            <span class="dot" style="background:${pmap[e.projectId]?.color||'#94a3b8'}"></span>
+            <div class="grow">
+              <div class="small"><strong>${pmap[e.projectId]?.name||'Unknown'}</strong> · ${e.hours}h</div>
+              ${e.note? `<div class="small muted">${escapeHtml(e.note)}</div>`:''}
+            </div>
+            <button class="btn small" data-del="${e.id}">🗑</button>
+          `;
+          listEl.appendChild(row);
         }
-        if(state.tab==='today'){
-          return t.list==='today'; // Today is an independent list
-        }
-        // inbox tab
-        return (t.list!=='today');
-      });
-
-      sortItems(items);
-      elList.innerHTML = items.length ? items.map(renderTask).join('') : `<div class="empty">这里没有任务。点击 <b>＋ 添加任务</b> 来创建一个。</div>`;
-    }
-
-    // ===== Dialog controls (部分翻译) =====
-    const dlg = document.getElementById('dlg');
-    const dlgTitle = document.getElementById('dlgTitle');
-    const f_title = document.getElementById('f_title');
-    const f_notes = document.getElementById('f_notes');
-    const f_due = document.getElementById('f_due');
-    const f_pri = document.getElementById('f_pri');
-    const f_tags = document.getElementById('f_tags');
-    const f_repeat = document.getElementById('f_repeat');
-    const btnSave = document.getElementById('btnSave');
-    const btnDelete = document.getElementById('btnDelete');
-    const btnClose = document.getElementById('btnClose');
-
-    let editing = null; // id or null
-
-    function setDialogForTab(){
-      const inToday = state.tab==='today';
-      document.getElementById('row_due').style.display = inToday ? 'none':'block';
-      document.getElementById('row_repeat').style.display = inToday ? 'none':'block';
-    }
-
-    function openNew(){
-      editing = null; dlgTitle.textContent = state.tab==='today' ? '新的“今天”项' : '新任务';
-      f_title.value = ''; f_notes.value=''; f_due.value=''; f_pri.value='2'; f_tags.value=''; f_repeat.value='none';
-      setDialogForTab();
-      try { if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.show(); } catch { dlg.show(); }
-      f_title.focus();
-    }
-
-    async function openEdit(id){
-      const items = await db.all();
-      const t = items.find(x=>x.id===id); if(!t) return;
-      editing = id; dlgTitle.textContent = '编辑';
-      f_title.value = t.title || '';
-      f_notes.value = t.notes || '';
-      f_due.value = t.due ? new Date(t.due).toISOString().slice(0,16) : '';
-      f_pri.value = String(t.pri||2);
-      f_tags.value = (t.tags||[]).join(', ');
-      f_repeat.value = t.repeat||'none';
-      setDialogForTab();
-      try { if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.show(); } catch { dlg.show(); }
-    }
-
-    async function save(){
-      const base = editing ? (await db.all()).find(x=>x.id===editing) : { id: uid(), created: Date.now(), done:false, list: (state.tab==='today'?'today':'inbox') };
-      const t = Object.assign({}, base, {
-        title: f_title.value.trim(),
-        notes: f_notes.value.trim(),
-        due: (state.tab==='today') ? null : (f_due.value ? new Date(f_due.value).toISOString() : null),
-        pri: parseInt(f_pri.value,10),
-        tags: f_tags.value.split(',').map(s=>s.trim()).filter(Boolean),
-        repeat: (state.tab==='today') ? 'none' : f_repeat.value
-      });
-      if(!t.title){ f_title.focus(); return; }
-      await db.put(t); dlg.close(); refresh();
-    }
-
-    async function remove(){ if(!editing) return; await db.del(editing); dlg.close(); refresh(); }
-
-    async function toggleDone(id){
-      const items = await db.all(); const t = items.find(x=>x.id===id); if(!t) return;
-      t.done = !t.done;
-      if(t.list!=='today' && t.done && t.repeat && t.repeat!=='none'){
-        const next = JSON.parse(JSON.stringify(t));
-        next.id = uid(); next.done = false; next.created = Date.now();
-        if(t.due){
-          const d = new Date(t.due);
-          if(t.repeat==='daily') d.setDate(d.getDate()+1);
-          else if(t.repeat==='weekly') d.setDate(d.getDate()+7);
-          else if(t.repeat==='biweekly') d.setDate(d.getDate()+14);
-          else if(t.repeat==='monthly') d.setMonth(d.getMonth()+1);
-          next.due = d.toISOString();
-        }
-        await db.put(next);
       }
-      await db.put(t); refresh();
+      calGrid.appendChild(dayEl);
     }
 
-    // ===== Events (部分翻译) =====
-    document.getElementById('btnAdd').addEventListener('click', openNew);
-    document.getElementById('btnExport').addEventListener('click', async ()=>{
-      const items = await db.all(); const blob = new Blob([JSON.stringify(items,null,2)], {type:'application/json'});
-      const url = URL.createObjectURL(blob); const a = Object.assign(document.createElement('a'), { href:url, download:`tasks-${todayYMD()}.json` });
-      a.click(); URL.revokeObjectURL(url);
+    // Wire up per-day Add & delete buttons
+    calGrid.querySelectorAll('[data-add]').forEach(btn=>{
+      btn.addEventListener('click', ()=> openDialog(btn.getAttribute('data-add')));
     });
-    document.getElementById('btnImport').addEventListener('click', ()=> document.getElementById('fileImport').click());
-    document.getElementById('fileImport').addEventListener('change', async (e)=>{
-      const file = e.target.files[0]; if(!file) return; const text = await file.text();
-      const items = JSON.parse(text);
-      if(Array.isArray(items)){
-        for(const t of items){ if(!t.id) t.id = uid(); if(!t.list) t.list='inbox'; await db.put(t); }
-        refresh(); alert('成功导入 '+items.length+' 个任务'); // 翻译
-      }
+    calGrid.querySelectorAll('[data-del]').forEach(btn=>{
+      btn.addEventListener('click', ()=> { delEntry(btn.getAttribute('data-del')); renderCalendar(); });
     });
+  }
 
-    elQ.addEventListener('input', ()=>{ state.q = elQ.value.trim(); refresh(); });
-    elToggleHideDone.addEventListener('change', ()=>{ state.hideDone = elToggleHideDone.checked; refresh(); });
-    elSortBy.addEventListener('change', ()=>{ state.sortBy = elSortBy.value; refresh(); });
-    elFilterTag.addEventListener('change', ()=>{ state.tag = elFilterTag.value; refresh(); });
+  function escapeHtml(s){ return s.replace(/[&<>"']/g, c=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c])); }
 
-    elTabs.forEach(btn=>btn.addEventListener('click', ()=>{
-      elTabs.forEach(b=>b.classList.remove('active'));
-      btn.classList.add('active'); state.tab = btn.dataset.tab; refresh();
-    }));
+  // ===== Entry Dialog =====
+  function openDialog(dateStr){
+    dlgDate.value = dateStr || fmtYMD(new Date());
+    dlgHours.value = '1';
+    dlgNote.value = '';
+    // populate projects
+    dlgProject.innerHTML = '';
+    for(const p of db.projects){ const o=document.createElement('option'); o.value=p.id; o.textContent=p.name; dlgProject.appendChild(o); }
+    entryDialog.showModal();
+  }
+  dlgCancel.onclick = ()=> entryDialog.close();
+  dlgSave.onclick = ()=>{
+    const date = dlgDate.value; const hours = Math.max(0, Number(dlgHours.value||0)); const pid = dlgProject.value; const note = dlgNote.value.trim();
+    if(!date || !pid || !Number.isFinite(hours)) return;
+    db.entries.push({ id:uid('e'), date, projectId:pid, hours:Number(hours.toFixed(2)), note: note||undefined });
+    saveDB(); entryDialog.close(); renderCalendar();
+  };
 
-    elList.addEventListener('click', async (e)=>{
-      const taskEl = e.target.closest('.task');
-      if(!taskEl) return;
-      const id = taskEl.dataset.id;
-      if(e.target.closest('[data-act="toggle"]')){ await toggleDone(id); return; }
-      if(e.target.closest('[data-act="delete"]')){ if(confirm('确定删除此任务吗？')) { await db.del(id); refresh(); } return; } // 翻译
-      if(e.target.closest('[data-act="edit"]')){ openEdit(id); return; }
+  addEntryOpen.onclick = ()=> openDialog(fmtYMD(new Date()));
+  btnPrev.onclick = ()=> { anchor = addDays(startOfISOWeek(anchor), -14); renderCalendar(); };
+  btnNext.onclick = ()=> { anchor = addDays(startOfISOWeek(anchor), 14); renderCalendar(); };
+  btnToday.onclick = ()=> { anchor = startOfISOWeek(new Date()); renderCalendar(); };
+
+  function delEntry(id){ db.entries = db.entries.filter(e=> e.id!==id); saveDB(); }
+
+  // ===== Totals =====
+  const totStart = document.getElementById('totStart');
+  const totEnd = document.getElementById('totEnd');
+  const totOverall = document.getElementById('totOverall');
+  const totList = document.getElementById('totList');
+
+  function renderTotals(){
+    if(!totStart.value) totStart.value = fmtYMD(addDays(new Date(), -13));
+    if(!totEnd.value) totEnd.value = fmtYMD(new Date());
+    const s = parseYMD(totStart.value); const e = parseYMD(totEnd.value); e.setUTCDate(e.getUTCDate()+1);
+    const inRange = db.entries.filter(x=> { const d=parseYMD(x.date); return d>=s && d<e; });
+    const byProject = new Map();
+    for(const x of inRange){ byProject.set(x.projectId, (byProject.get(x.projectId)||0)+x.hours); }
+    const total = Number(inRange.reduce((a,b)=>a+b.hours,0).toFixed(2));
+    totOverall.textContent = total + ' h';
+
+    const pmap = projectById();
+    totList.innerHTML = '';
+    for(const [pid,hours] of byProject){
+      const card = document.createElement('div');
+      card.className = 'day';
+      card.innerHTML = `
+        <div class="tag"><span class="dot" style="background:${pmap[pid]?.color||'#94a3b8'}"></span><strong>${pmap[pid]?.name||pid}</strong></div>
+        <div class="right" style="font-size:18px;font-weight:600">${hours.toFixed(2)} h</div>
+      `;
+      totList.appendChild(card);
+    }
+  }
+  totStart.addEventListener('change', renderTotals);
+  totEnd.addEventListener('change', renderTotals);
+
+  // ===== Projects =====
+  const projName = document.getElementById('projName');
+  const projColor = document.getElementById('projColor');
+  const projAdd = document.getElementById('projAdd');
+  const projList = document.getElementById('projList');
+
+  function renderProjects(){
+    projList.innerHTML = '';
+    for(const p of db.projects){
+      const card = document.createElement('div'); card.className='day';
+      card.innerHTML = `
+        <div class="tag"><span class="dot" style="background:${p.color}"></span><strong>${p.name}</strong></div>
+        <div class="small muted" style="margin-top:6px">${p.id}</div>
+        <div class="footer" style="margin-top:auto"><button class="btn" data-delp="${p.id}">Delete</button></div>
+      `;
+      projList.appendChild(card);
+    }
+    projList.querySelectorAll('[data-delp]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const id = btn.getAttribute('data-delp');
+        db.projects = db.projects.filter(x=> x.id!==id);
+        db.entries = db.entries.filter(x=> x.projectId!==id);
+        saveDB(); renderProjects(); renderCalendar();
+      });
     });
+  }
+  projAdd.onclick = ()=>{
+    const name = (projName.value||'').trim(); if(!name) return;
+    const color = projColor.value||'#22c55e';
+    db.projects.push({ id:uid('p'), name, color }); saveDB(); projName.value=''; renderProjects();
+  };
 
-    document.getElementById('btnClose').addEventListener('click', (e)=>{ e.preventDefault(); dlg.close(); });
-    document.getElementById('btnSave').addEventListener('click', (e)=>{ e.preventDefault(); save(); });
-    document.getElementById('btnDelete').addEventListener('click', remove);
+  // ===== Export / Import =====
+  document.getElementById('btnExport').onclick = ()=>{
+    const blob = new Blob([JSON.stringify(db,null,2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download='smart-calendar-data.json'; a.click(); URL.revokeObjectURL(url);
+  };
+  document.getElementById('importFile').addEventListener('change', (e)=>{
+    const f = e.target.files && e.target.files[0]; if(!f) return;
+    const reader = new FileReader(); reader.onload = ()=>{
+      try{ db = JSON.parse(String(reader.result)); saveDB(); renderCalendar(); renderTotals(); renderProjects(); }
+      catch{ alert('Invalid JSON'); }
+    }; reader.readAsText(f);
+  });
 
-    // ===== PWA install + SW (保持不变) =====
-    if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js'); }
+  // ===== Init =====
+  if('serviceWorker' in navigator){ window.addEventListener('load', ()=> navigator.serviceWorker.register('./sw.js')); }
+  renderCalendar();
 
-    // ===== Boot (保持不变) =====
-    (async ()=>{ await purgeTodayIfNeeded(); refresh(); })();
   </script>
 </body>
 </html>
