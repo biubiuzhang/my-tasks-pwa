@@ -18,10 +18,11 @@
     .tabs{display:flex;gap:8px;border-bottom:1px solid var(--border);margin:0 16px}
     .tab{padding:10px 12px;border:1px solid var(--border);border-bottom:none;border-radius:12px 12px 0 0;background:#fff;cursor:pointer}
     .tab[aria-selected="true"]{background:var(--chip)}
-    .panel{border:1px solid var(--border);border-radius:16px;padding:16px;background:#fff;margin:0 16px}
+    .panel{$1 overflow:auto}
     .toolbar{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-bottom:12px}
     .range{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px}
+    .grid{display:grid;grid-template-columns:repeat(7,220px);gap:10px}
+    .calendar-shell{border:1px solid var(--border);border-radius:16px;padding:12px;width:fit-content;}
     .day{min-height:160px;border:1px solid var(--border);border-radius:16px;padding:10px;background:#fff;display:flex;flex-direction:column}
     .day.today{outline:2px solid var(--ring)}
     .daytop{display:flex;align-items:baseline;justify-content:space-between}
@@ -45,10 +46,9 @@
 </head>
 <body>
   <header>
-    <h1>📅 Smart Calendar — 2‑Week Time Tracker (Vanilla)</h1>
-    <div>
-      <button class="btn" id="btnExport">Export JSON</button>
-      <label class="btn" for="importFile">Import JSON</label>
+    <div style="display:flex; gap:8px; margin-left:auto">
+      <button class="btn small" id="btnExport" title="Export JSON">⬇︎</button>
+      <label class="btn small" for="importFile" title="Import JSON">⬆︎</label>
       <input id="importFile" type="file" accept="application/json" class="hidden" />
     </div>
   </header>
@@ -71,7 +71,9 @@
         </div>
         <button class="btn" id="addEntryOpen">Add Entry</button>
       </div>
-      <div class="grid" id="calGrid"></div>
+      <div class="calendar-shell">
+        <div class="grid" id="calGrid"></div>
+      </div>
     </section>
 
     <!-- Totals Panel -->
@@ -310,8 +312,8 @@
   };
 
   addEntryOpen.onclick = ()=> openDialog(fmtYMD(new Date()));
-  btnPrev.onclick = ()=> { anchor = addDays(startOfISOWeek(anchor), -14); renderCalendar(); };
-  btnNext.onclick = ()=> { anchor = addDays(startOfISOWeek(anchor), 14); renderCalendar(); };
+  btnPrev.onclick = ()=> { anchor = addDays(startOfISOWeek(anchor), -7); renderCalendar(); }; renderCalendar(); };
+  btnNext.onclick = ()=> { anchor = addDays(startOfISOWeek(anchor), 7); renderCalendar(); }; renderCalendar(); };
   btnToday.onclick = ()=> { anchor = startOfISOWeek(new Date()); renderCalendar(); };
 
   function delEntry(id){ db.entries = db.entries.filter(e=> e.id!==id); saveDB(); }
