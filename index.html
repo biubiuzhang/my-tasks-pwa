@@ -25,6 +25,8 @@
     .btn:hover{border-color:#2a3345}
     .ghost{background:transparent}
     .chip{border:1px solid var(--grid);background:var(--pill-bg);padding:6px 10px;border-radius:999px;color:var(--muted);font-size:12px}
+    .input, select, textarea{width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--grid);background:var(--card);color:var(--text)}
+    label{font-size:12px;color:var(--muted)}
 
     /* Summary strip */
     .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:14px 0}
@@ -55,13 +57,14 @@
 
     /* Drawer (native dialog) */
     dialog::backdrop{background:rgba(0,0,0,.55)}
-    dialog{border:0;border-radius:20px;max-width:640px;width:92vw;background:var(--card);color:var(--text);box-shadow:var(--shadow)}
+    dialog{border:0;border-radius:20px;max-width:740px;width:92vw;background:var(--card);color:var(--text);box-shadow:var(--shadow)}
     .drawer-head{display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid var(--grid)}
     .drawer-body{padding:8px 16px 16px 16px}
     .task-row{display:flex;align-items:center;justify-content:space-between;border-bottom:1px dashed var(--grid);padding:12px 0}
     .task-row:last-child{border-bottom:0}
     .left{display:flex;gap:10px;align-items:center}
     .money{font-weight:700}
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 
     /* Responsive */
     @media (max-width:720px){
@@ -69,6 +72,7 @@
       .date{font-size:12px}
       .pill{font-size:11px}
       .bars{gap:4px}
+      .grid-2{grid-template-columns:1fr}
     }
   </style>
 </head>
@@ -105,14 +109,81 @@
         <div class="k">Selected Day</div>
         <div class="v" id="drawerDate">—</div>
       </div>
-      <button class="btn" onclick="drawer.close()">Close</button>
+      <div class="row">
+        <button class="btn" id="btnQuickAdd">+ Quick Add Hours</button>
+        <button class="btn" id="btnAddTask">+ Add Task</button>
+        <button class="btn ghost" onclick="drawer.close()">Close</button>
+      </div>
     </div>
     <div class="drawer-body">
       <div class="row" style="justify-content:space-between;margin-bottom:12px">
         <div class="chip">Total Hours: <span id="drawerHours">0</span></div>
         <div class="chip">Income: <span id="drawerIncome">¥0</span></div>
       </div>
+
+      <!-- Task list -->
       <div id="taskList"></div>
+
+      <!-- Add/Edit form (hidden by default) -->
+      <div id="editor" style="display:none;margin-top:16px" class="card">
+        <div class="k" id="editorTitle">Add Task</div>
+        <div class="grid-2" style="margin-top:8px">
+          <div>
+            <label>Title</label>
+            <input id="fTitle" class="input" placeholder="e.g. Main Shift"/>
+          </div>
+          <div>
+            <label>Hours</label>
+            <input id="fHours" type="number" step="0.01" min="0" class="input" placeholder="e.g. 6.5"/>
+          </div>
+          <div>
+            <label>Rate (per hour)</label>
+            <input id="fRate" type="number" step="0.01" min="0" class="input" placeholder="e.g. 100"/>
+          </div>
+          <div>
+            <label>Pay (optional, overrides Rate×Hours)</label>
+            <input id="fPay" type="number" step="0.01" min="0" class="input" placeholder="leave blank to auto-calc"/>
+          </div>
+        </div>
+        <div style="margin-top:8px">
+          <label>Notes</label>
+          <textarea id="fNote" rows="3" class="input" placeholder="details / reference"></textarea>
+        </div>
+        <div class="row" style="justify-content:flex-end;margin-top:10px">
+          <button class="btn ghost" id="btnCancelEdit">Cancel</button>
+          <button class="btn" id="btnSaveTask">Save</button>
+        </div>
+      </div>
+
+      <!-- Quick add hours -->
+      <div id="quickAdd" style="display:none;margin-top:16px" class="card">
+        <div class="k">Quick Add Hours</div>
+        <div class="grid-2" style="margin-top:8px">
+          <div>
+            <label>Hours</label>
+            <input id="qHours" type="number" step="0.01" min="0" class="input" placeholder="e.g. 2"/>
+          </div>
+          <div>
+            <label>Rate</label>
+            <input id="qRate" type="number" step="0.01" min="0" class="input" placeholder="e.g. 100"/>
+          </div>
+        </div>
+        <div class="grid-2" style="margin-top:8px">
+          <div>
+            <label>Title</label>
+            <input id="qTitle" class="input" placeholder="e.g. Work" value="Work"/>
+          </div>
+          <div>
+            <label>Pay (optional)</label>
+            <input id="qPay" type="number" step="0.01" min="0" class="input"/>
+          </div>
+        </div>
+        <div class="row" style="justify-content:flex-end;margin-top:10px">
+          <button class="btn ghost" id="btnCancelQuick">Cancel</button>
+          <button class="btn" id="btnAddQuick">Add</button>
+        </div>
+      </div>
+
     </div>
   </dialog>
 
@@ -122,32 +193,17 @@
 ===================== */
 const CURRENCY = '¥'; // change to '$' if needed
 
-// Demo dataset — replace/extend with your real persistence later
-const demoData = {
-  "2025-10-07": {
-    tasks: [
-      { title: "Main Shift", hours: 6 + 10/60, rate: 100.0, note: "正班 6h10m × 测试长岗常常哈哈斤斤计较", pay: 616.67 },
-      { title: "Testing", hours: 3.0, rate: 10.0, note: "额外测试", pay: 30 }
-    ]
-  },
-  "2025-10-01": { tasks: [{ title: "Holiday Support", hours: 2.5, rate: 120 }] },
-  "2025-10-05": { tasks: [{ title: "Meeting", hours: 1.2, rate: 0, note: "unpaid" }] },
-  "2025-10-10": { tasks: [{ title: "Client A", hours: 4, rate: 120 }, { title: "Admin", hours: .8, rate: 0 }] },
-  "2025-10-18": { tasks: [{ title: "Client B", hours: 7.3, rate: 110 }] }
-};
-
-// Try to read from localStorage; if missing, seed with demo
 const DB_KEY = 'wpa_data_v1';
-let db = JSON.parse(localStorage.getItem(DB_KEY) || 'null');
-if(!db){ db = demoData; localStorage.setItem(DB_KEY, JSON.stringify(db)); }
+let db = JSON.parse(localStorage.getItem(DB_KEY) || 'null') || {};
+function persist(){ localStorage.setItem(DB_KEY, JSON.stringify(db)); }
 
-function fmtMoney(n){ return CURRENCY + (n||0).toFixed(2); }
-function fmtHours(h){ return (h||0).toFixed(1) + ' h'; }
+function fmtMoney(n){ return CURRENCY + (Number(n)||0).toFixed(2); }
+function fmtHours(h){ return (Number(h)||0).toFixed(1) + ' h'; }
 function ymd(d){ return d.toISOString().slice(0,10); }
 
 // Deterministic color from string
 function colorFromString(s){
-  let h=0; for(let i=0;i<s.length;i++){ h = (h*31 + s.charCodeAt(i))>>>0; }
+  let h=0; for(let i=0;i<String(s).length;i++){ h = (h*31 + String(s).charCodeAt(i))>>>0; }
   h = h % 360; const sat = 65, light = 55; return `hsl(${h} ${sat}% ${light}%)`;
 }
 
@@ -168,7 +224,18 @@ const drawerHoursEl = document.getElementById('drawerHours');
 const drawerIncomeEl = document.getElementById('drawerIncome');
 const taskListEl = document.getElementById('taskList');
 
+const editor = document.getElementById('editor');
+const btnAddTask = document.getElementById('btnAddTask');
+const btnSaveTask = document.getElementById('btnSaveTask');
+const btnCancelEdit = document.getElementById('btnCancelEdit');
+
+const quickAdd = document.getElementById('quickAdd');
+const btnQuickAdd = document.getElementById('btnQuickAdd');
+const btnAddQuick = document.getElementById('btnAddQuick');
+const btnCancelQuick = document.getElementById('btnCancelQuick');
+
 let anchor = new Date();
+let currentDateKey = null;
 
 // Weekday header
 const weekdayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
@@ -187,15 +254,17 @@ function addDays(d, n){ const x = new Date(d); x.setDate(x.getDate()+n); return 
 function computeTotals(tasks){
   let hours=0, income=0; const byType = new Map();
   (tasks||[]).forEach(t=>{
-    hours += t.hours || 0;
-    const pay = (t.pay != null) ? t.pay : (t.rate||0) * (t.hours||0);
+    const h = Number(t.hours)||0; hours += h;
+    const pay = (t.pay != null && t.pay !== '') ? Number(t.pay) : (Number(t.rate)||0) * h;
     income += pay;
     const key = t.title || 'Task';
     const prev = byType.get(key) || {hours:0, income:0, color:colorFromString(key)};
-    prev.hours += (t.hours||0); prev.income += pay; byType.set(key, prev);
+    prev.hours += h; prev.income += pay; byType.set(key, prev);
   });
   return {hours, income, byType};
 }
+
+function ensureDay(key){ if(!db[key]) db[key] = { tasks: [] }; }
 
 function render(){
   // determine 14-day window starting from Monday of the week that holds anchor
@@ -262,30 +331,83 @@ function render(){
 }
 
 function openDrawerForDate(key){
-  const entry = db[key] || {tasks:[]};
+  currentDateKey = key;
+  ensureDay(key);
+  const entry = db[key];
   const {hours, income} = computeTotals(entry.tasks);
   drawerDateEl.textContent = key;
   drawerHoursEl.textContent = fmtHours(hours);
   drawerIncomeEl.textContent = fmtMoney(income);
-  taskListEl.innerHTML = '';
 
+  // List tasks
+  taskListEl.innerHTML = '';
   if(entry.tasks.length===0){
     taskListEl.innerHTML = `<div class="chip">No tasks for this day.</div>`;
   } else {
-    entry.tasks.forEach(t=>{
+    entry.tasks.forEach((t, idx)=>{
       const row = document.createElement('div'); row.className='task-row';
       const left = document.createElement('div'); left.className='left';
       const dot = document.createElement('span'); dot.className='dot'; dot.style.background = colorFromString(t.title||'Task'); left.appendChild(dot);
       const title = document.createElement('div'); title.innerHTML = `<strong>${t.title||'Task'}</strong><div class="k">${t.note||''}</div>`; left.appendChild(title);
       const right = document.createElement('div');
-      const pay = (t.pay != null) ? t.pay : (t.rate||0) * (t.hours||0);
-      right.innerHTML = `<div class="money">${fmtMoney(pay)}</div><div class="k" style="text-align:right">${(t.hours||0).toFixed(2)} h @ ${fmtMoney(t.rate||0)}/h</div>`;
+      const pay = (t.pay != null && t.pay !== '') ? Number(t.pay) : (Number(t.rate)||0) * (Number(t.hours)||0);
+      right.innerHTML = `<div class="money" style="text-align:right">${fmtMoney(pay)}</div><div class="k" style="text-align:right">${(Number(t.hours)||0).toFixed(2)} h @ ${fmtMoney(t.rate||0)}/h</div>`;
+      const del = document.createElement('button'); del.className='btn ghost'; del.textContent='Delete'; del.onclick=()=>{ deleteTask(key, idx); };
+      right.appendChild(del);
       row.appendChild(left); row.appendChild(right);
       taskListEl.appendChild(row);
     });
   }
+
+  // Hide editors initially
+  editor.style.display='none';
+  quickAdd.style.display='none';
   drawer.showModal();
 }
+
+function deleteTask(key, idx){
+  db[key].tasks.splice(idx,1); persist(); render(); openDrawerForDate(key);
+}
+
+// Add Task flow
+btnAddTask.onclick = ()=>{ editor.style.display='block'; quickAdd.style.display='none'; };
+btnCancelEdit.onclick = ()=>{ editor.style.display='none'; };
+btnSaveTask.onclick = ()=>{
+  const t = {
+    title: document.getElementById('fTitle').value || 'Task',
+    hours: Number(document.getElementById('fHours').value)||0,
+    rate:  Number(document.getElementById('fRate').value)||0,
+    pay:   document.getElementById('fPay').value,
+    note:  document.getElementById('fNote').value||''
+  };
+  ensureDay(currentDateKey); db[currentDateKey].tasks.push(t); persist(); render(); openDrawerForDate(currentDateKey);
+  // reset form
+  document.getElementById('fTitle').value='';
+  document.getElementById('fHours').value='';
+  document.getElementById('fRate').value='';
+  document.getElementById('fPay').value='';
+  document.getElementById('fNote').value='';
+  editor.style.display='none';
+};
+
+// Quick add hours flow
+btnQuickAdd.onclick = ()=>{ quickAdd.style.display='block'; editor.style.display='none'; };
+btnCancelQuick.onclick = ()=>{ quickAdd.style.display='none'; };
+btnAddQuick.onclick = ()=>{
+  const t = {
+    title: document.getElementById('qTitle').value || 'Work',
+    hours: Number(document.getElementById('qHours').value)||0,
+    rate:  Number(document.getElementById('qRate').value)||0,
+    pay:   document.getElementById('qPay').value
+  };
+  ensureDay(currentDateKey); db[currentDateKey].tasks.push(t); persist(); render(); openDrawerForDate(currentDateKey);
+  // reset
+  document.getElementById('qHours').value='';
+  document.getElementById('qRate').value='';
+  document.getElementById('qTitle').value='Work';
+  document.getElementById('qPay').value='';
+  quickAdd.style.display='none';
+};
 
 // Navigation handlers
  document.getElementById('btnPrev').onclick = ()=>{ anchor = addDays(startOfWeek(anchor), -14); render(); };
