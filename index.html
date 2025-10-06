@@ -1,402 +1,298 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Smart Calendar — 2‑Week Time Tracker</title>
-  <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="icon" href="./icons/icon-192.png" />
+  <title>WPA – Two‑Week Work Planner</title>
   <style>
-    :root{--bg:#f7fafc;--card:#fff;--ink:#0f172a;--muted:#64748b;--ring:#6366f1;--border:#e2e8f0;--chip:#eef2ff}
-    *{box-sizing:border-box}
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:linear-gradient(#fafafa,#fff)}
-    header{display:flex;gap:12px;align-items:center;justify-content:flex-end;padding:8px 12px}
-    .btn{border:1px solid var(--border);background:#fff;border-radius:10px;padding:6px 10px;cursor:pointer;font-size:12px}
-    .btn.icon{display:inline-grid;place-items:center;padding:6px;width:30px;height:30px}
-    .btn:focus{outline:2px solid var(--ring)}
+    :root{
+      --bg:#0b0d12;          /* page background */
+      --card:#12151c;        /* cards */
+      --muted:#a9b0c0;       /* secondary text */
+      --text:#e6eaf3;        /* primary text */
+      --accent:#27c77d;      /* accent */
+      --grid:#1e2430;        /* grid borders */
+      --pill-bg: #1b2130;    /* task pill bg */
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 16px;
+    }
+    html,body{height:100%}
+    body{margin:0;font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji","Segoe UI Emoji"; background:var(--bg); color:var(--text);}
+    .wrap{max-width:1100px;margin:24px auto;padding:0 16px}
+    .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    .title{font-weight:700;font-size:22px}
+    .btn{appearance:none;border:1px solid var(--grid);background:var(--card);color:var(--text);border-radius:12px;padding:10px 14px;cursor:pointer}
+    .btn:hover{border-color:#2a3345}
+    .ghost{background:transparent}
+    .chip{border:1px solid var(--grid);background:var(--pill-bg);padding:6px 10px;border-radius:999px;color:var(--muted);font-size:12px}
 
-    .wrap{max-width:1200px;margin:0 auto;padding:0 12px 16px}
-    .tabs{display:flex;gap:6px;border-bottom:1px solid var(--border);margin:0 8px}
-    .tab{padding:8px 10px;border:1px solid var(--border);border-bottom:none;border-radius:10px 10px 0 0;background:#fff;cursor:pointer;font-size:13px}
-    .tab[aria-selected="true"]{background:var(--chip)}
-    .panel{border:1px solid var(--border);border-radius:14px;padding:12px;background:#fff;margin:0 8px;overflow:auto}
+    /* Summary strip */
+    .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:14px 0}
+    .card{background:var(--card);border:1px solid var(--grid);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow)}
+    .k{font-size:12px;color:var(--muted);margin-bottom:4px}
+    .v{font-size:22px;font-weight:700}
 
-    .toolbar{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-bottom:8px}
-    .grid{display:grid;grid-template-columns:repeat(7,220px);gap:10px}
-    .calendar-shell{display:inline-block;border:1px solid var(--border);border-radius:14px;padding:10px;background:#fff}
+    /* Calendar grid */
+    .calendar{background:var(--card);border:1px solid var(--grid);border-radius:var(--radius);overflow:hidden}
+    .head{display:grid;grid-template-columns:repeat(7,1fr);border-bottom:1px solid var(--grid);}
+    .head div{padding:10px 12px;font-size:12px;color:var(--muted);text-align:center}
+    .grid{display:grid;grid-template-columns:repeat(7,1fr);min-height:360px}
 
-    .day{min-height:170px;border:1px solid var(--border);border-radius:12px;padding:8px;background:#fff;display:flex;flex-direction:column}
-    .day.today{outline:2px solid var(--ring)}
-    .daytop{display:flex;align-items:baseline;justify-content:space-between}
-    .muted{color:var(--muted)}
-    .list{margin-top:6px;display:flex;flex-direction:column;gap:6px;overflow:auto}
-    .entry{display:flex;gap:8px;align-items:flex-start;border:1px solid var(--border);border-radius:10px;padding:6px}
-    .dot{width:10px;height:10px;border-radius:999px;flex:0 0 10px;border:1px solid #0002}
-    .grow{flex:1}
-    .small{font-size:12px}
+    .day{border-right:1px solid var(--grid);border-bottom:1px solid var(--grid);padding:10px 10px 12px 10px;position:relative;cursor:pointer}
+    .day:nth-child(7n){border-right:0}
+    .date{font-weight:700;font-size:13px}
+    .total{position:absolute;top:10px;right:10px;font-size:12px;color:var(--muted)}
+    .bars{display:flex;gap:6px;flex-wrap:wrap;margin-top:28px}
+    .pill{display:flex;align-items:center;gap:6px;background:var(--pill-bg);border-radius:999px;border:1px solid var(--grid);padding:4px 8px;font-size:12px}
+    .dot{width:8px;height:8px;border-radius:50%}
+    .more{color:var(--muted)}
+    .empty{opacity:.4}
+    .today{outline:2px solid var(--accent);outline-offset:-2px;border-radius:10px}
 
-    .projects{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
-    label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
-    input,select{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:10px}
-    .row{display:flex;gap:10px;align-items:end}
-    .row>*{flex:1}
-    .tag{display:inline-flex;gap:8px;align-items:center}
-    .right{margin-left:auto}
-    .footer{display:flex;gap:8px;justify-content:flex-end}
-    .hidden{display:none}
+    /* Legend */
+    .legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+    .legend .pill{padding:6px 10px}
+
+    /* Drawer (native dialog) */
+    dialog::backdrop{background:rgba(0,0,0,.55)}
+    dialog{border:0;border-radius:20px;max-width:640px;width:92vw;background:var(--card);color:var(--text);box-shadow:var(--shadow)}
+    .drawer-head{display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid var(--grid)}
+    .drawer-body{padding:8px 16px 16px 16px}
+    .task-row{display:flex;align-items:center;justify-content:space-between;border-bottom:1px dashed var(--grid);padding:12px 0}
+    .task-row:last-child{border-bottom:0}
+    .left{display:flex;gap:10px;align-items:center}
+    .money{font-weight:700}
+
+    /* Responsive */
+    @media (max-width:720px){
+      .summary{grid-template-columns:repeat(2,1fr)}
+      .date{font-size:12px}
+      .pill{font-size:11px}
+      .bars{gap:4px}
+    }
   </style>
 </head>
 <body>
-  <header>
-    <button class="btn icon" id="btnExport" title="Export JSON">⬇︎</button>
-    <label class="btn icon" for="importFile" title="Import JSON">⬆︎</label>
-    <input id="importFile" type="file" accept="application/json" class="hidden" />
-  </header>
-
   <div class="wrap">
-    <div class="tabs" role="tablist">
-      <button class="tab" role="tab" id="tabCal" aria-selected="true">Calendar</button>
-      <button class="tab" role="tab" id="tabTotals" aria-selected="false">Totals</button>
-      <button class="tab" role="tab" id="tabProj" aria-selected="false">Projects</button>
+    <div class="row" style="justify-content:space-between">
+      <div class="title">WPA · Two‑Week View</div>
+      <div class="row">
+        <button class="btn ghost" id="btnPrev">◀︎ Prev 2 weeks</button>
+        <button class="btn" id="btnToday">Today</button>
+        <button class="btn ghost" id="btnNext">Next 2 weeks ▶︎</button>
+      </div>
     </div>
 
-    <!-- Calendar Panel -->
-    <section id="panelCal" class="panel" role="tabpanel" aria-labelledby="tabCal">
-      <div class="toolbar">
-        <div style="display:flex;gap:8px;align-items:center">
-          <button class="btn icon" id="prev" title="Previous week">◀</button>
-          <button class="btn icon" id="next" title="Next week">▶</button>
-          <button class="btn" id="btnToday">This ISO Week</button>
-          <span class="muted small" id="rangeText"></span>
-        </div>
-      </div>
-      <div class="calendar-shell">
-        <div class="grid" id="calGrid"></div>
-      </div>
-    </section>
+    <div class="summary">
+      <div class="card"><div class="k">Total Hours</div><div class="v" id="sumHours">0 h</div></div>
+      <div class="card"><div class="k">Income</div><div class="v" id="sumIncome">¥0</div></div>
+      <div class="card"><div class="k">Days Worked</div><div class="v" id="sumDays">0</div></div>
+      <div class="card"><div class="k">Period</div><div class="v" id="sumRange">—</div></div>
+    </div>
 
-    <!-- Totals Panel -->
-    <section id="panelTotals" class="panel hidden" role="tabpanel" aria-labelledby="tabTotals">
-      <div class="row">
-        <div>
-          <label>Start</label>
-          <input type="date" id="totStart" />
-        </div>
-        <div>
-          <label>End</label>
-          <input type="date" id="totEnd" />
-        </div>
-        <div style="text-align:right">
-          <div class="muted small">Total</div>
-          <div id="totOverall" style="font-weight:600;font-size:20px">0 h</div>
-        </div>
-      </div>
-      <div id="totList" style="margin-top:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px"></div>
-    </section>
+    <div class="calendar card">
+      <div class="head" id="weekdayHead"></div>
+      <div class="grid" id="grid"></div>
+    </div>
 
-    <!-- Projects Panel -->
-    <section id="panelProj" class="panel hidden" role="tabpanel" aria-labelledby="tabProj">
-      <div class="row">
-        <div>
-          <label>Project name</label>
-          <input id="projName" placeholder="e.g., Titan FW" />
-        </div>
-        <div style="flex:0 0 120px">
-          <label>Color</label>
-          <input id="projColor" type="color" value="#22c55e" />
-        </div>
-        <div style="flex:0 0 140px">
-          <button class="btn" id="projAdd">Add Project</button>
-        </div>
-      </div>
-      <div class="projects" id="projList" style="margin-top:12px"></div>
-    </section>
+    <div class="legend" id="legend"></div>
   </div>
 
-  <!-- Add/Edit Entry Modal -->
-  <dialog id="entryDialog" style="border:none;border-radius:16px;padding:16px;max-width:420px;width:90vw">
-    <h3 style="margin:0 0 8px">Add Time Entry</h3>
-    <div class="row">
+  <!-- Drawer for day details -->
+  <dialog id="drawer">
+    <div class="drawer-head">
       <div>
-        <label>Date</label>
-        <input type="date" id="dlgDate" />
+        <div class="k">Selected Day</div>
+        <div class="v" id="drawerDate">—</div>
       </div>
-      <div>
-        <label>Hours</label>
-        <input type="number" id="dlgHours" min="0" step="0.25" value="1" />
+      <button class="btn" onclick="drawer.close()">Close</button>
+    </div>
+    <div class="drawer-body">
+      <div class="row" style="justify-content:space-between;margin-bottom:12px">
+        <div class="chip">Total Hours: <span id="drawerHours">0</span></div>
+        <div class="chip">Income: <span id="drawerIncome">¥0</span></div>
       </div>
-    </div>
-    <div class="row" style="margin-top:8px">
-      <div>
-        <label>Project</label>
-        <select id="dlgProject"></select>
-      </div>
-    </div>
-    <div style="margin-top:8px">
-      <label>Note (optional)</label>
-      <input id="dlgNote" placeholder="e.g., PR review" />
-    </div>
-    <div class="footer" style="margin-top:12px">
-      <button class="btn" id="dlgCancel">Cancel</button>
-      <button class="btn" id="dlgSave">Save</button>
+      <div id="taskList"></div>
     </div>
   </dialog>
 
-  <script>
-  // ===== Data Types & Storage =====
-  const STORAGE_KEY = 'smart-calendar-vanilla-v2';
-  /** @type {{projects: {id:string,name:string,color:string}[], entries: {id:string,date:string,projectId:string,hours:number,note?:string}[]}} */
-  let db = loadDB();
+<script>
+/* =====================
+   Data & Utilities
+===================== */
+const CURRENCY = '¥'; // change to '$' if needed
 
-  function loadDB(){
-    try{
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if(!raw) return seed();
-      const parsed = JSON.parse(raw);
-      if(!parsed.projects || !parsed.entries) throw new Error('bad');
-      return parsed;
-    }catch(e){return seed();}
-  }
-  function saveDB(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); }
-  function uid(p='id'){ return p + '_' + Math.random().toString(36).slice(2,10); }
+// Demo dataset — replace/extend with your real persistence later
+const demoData = {
+  "2025-10-07": {
+    tasks: [
+      { title: "Main Shift", hours: 6 + 10/60, rate: 100.0, note: "正班 6h10m × 测试长岗常常哈哈斤斤计较", pay: 616.67 },
+      { title: "Testing", hours: 3.0, rate: 10.0, note: "额外测试", pay: 30 }
+    ]
+  },
+  "2025-10-01": { tasks: [{ title: "Holiday Support", hours: 2.5, rate: 120 }] },
+  "2025-10-05": { tasks: [{ title: "Meeting", hours: 1.2, rate: 0, note: "unpaid" }] },
+  "2025-10-10": { tasks: [{ title: "Client A", hours: 4, rate: 120 }, { title: "Admin", hours: .8, rate: 0 }] },
+  "2025-10-18": { tasks: [{ title: "Client B", hours: 7.3, rate: 110 }] }
+};
 
-  function seed(){
-    const today = new Date();
-    return {
-      projects:[
-        {id:'p1', name:'Titan FW', color:'#22c55e'},
-        {id:'p2', name:'QA Automation', color:'#3b82f6'},
-        {id:'p3', name:'Baby Tracker', color:'#f97316'},
-      ],
-      entries:[
-        {id:uid('e'), date:fmtYMD(addDays(today,-1)), projectId:'p1', hours:2.5, note:'PR review'},
-        {id:uid('e'), date:fmtYMD(addDays(today,-1)), projectId:'p2', hours:1.5, note:'Playwright tests'},
-        {id:uid('e'), date:fmtYMD(today), projectId:'p3', hours:0.75, note:'UI polish'},
-      ]
-    }
-  }
+// Try to read from localStorage; if missing, seed with demo
+const DB_KEY = 'wpa_data_v1';
+let db = JSON.parse(localStorage.getItem(DB_KEY) || 'null');
+if(!db){ db = demoData; localStorage.setItem(DB_KEY, JSON.stringify(db)); }
 
-  // ===== Date Helpers (ISO week) =====
-  function startOfISOWeek(d){
-    const x = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
-    const day = x.getUTCDay();
-    const diff = (day===0?-6:1) - day; // Monday=1
-    x.setUTCDate(x.getUTCDate()+diff);
-    return x;
-  }
-  function addDays(d,n){ const x=new Date(d); x.setUTCDate(x.getUTCDate()+n); return x; }
-  function fmtYMD(d){ return d.toISOString().slice(0,10); }
-  function parseYMD(s){ const [y,m,da]=s.split('-').map(Number); return new Date(Date.UTC(y,m-1,da)); }
-  function humanDate(d){ return d.toLocaleDateString(undefined,{weekday:'short', month:'short', day:'numeric'}); }
+function fmtMoney(n){ return CURRENCY + (n||0).toFixed(2); }
+function fmtHours(h){ return (h||0).toFixed(1) + ' h'; }
+function ymd(d){ return d.toISOString().slice(0,10); }
 
-  // ===== Elements =====
-  let anchor = startOfISOWeek(new Date());
-  const calGrid = document.getElementById('calGrid');
-  const rangeText = document.getElementById('rangeText');
-  const btnPrev = document.getElementById('prev');
-  const btnNext = document.getElementById('next');
-  const btnToday = document.getElementById('btnToday');
-  const addEntryOpen = document.getElementById('addEntryOpen'); // optional (not shown now)
-  const entryDialog = document.getElementById('entryDialog');
-  const dlgDate = document.getElementById('dlgDate');
-  const dlgHours = document.getElementById('dlgHours');
-  const dlgProject = document.getElementById('dlgProject');
-  const dlgNote = document.getElementById('dlgNote');
-  const dlgCancel = document.getElementById('dlgCancel');
-  const dlgSave = document.getElementById('dlgSave');
+// Deterministic color from string
+function colorFromString(s){
+  let h=0; for(let i=0;i<s.length;i++){ h = (h*31 + s.charCodeAt(i))>>>0; }
+  h = h % 360; const sat = 65, light = 55; return `hsl(${h} ${sat}% ${light}%)`;
+}
 
-  // Tabs
-  const tabCal = document.getElementById('tabCal');
-  const tabTotals = document.getElementById('tabTotals');
-  const tabProj = document.getElementById('tabProj');
-  const panelCal = document.getElementById('panelCal');
-  const panelTotals = document.getElementById('panelTotals');
-  const panelProj = document.getElementById('panelProj');
+/* =====================
+   Calendar Logic
+===================== */
+const gridEl = document.getElementById('grid');
+const legendEl = document.getElementById('legend');
+const headEl = document.getElementById('weekdayHead');
+const sumHoursEl = document.getElementById('sumHours');
+const sumIncomeEl = document.getElementById('sumIncome');
+const sumDaysEl = document.getElementById('sumDays');
+const sumRangeEl = document.getElementById('sumRange');
 
-  function showPanel(which){
-    const map = {cal:[panelCal, tabCal], totals:[panelTotals, tabTotals], proj:[panelProj, tabProj]};
-    for(const [k,[p,t]] of Object.entries(map)){
-      const sel = (k===which);
-      p.classList.toggle('hidden', !sel);
-      t.setAttribute('aria-selected', sel?'true':'false');
-    }
-  }
+const drawer = document.getElementById('drawer');
+const drawerDateEl = document.getElementById('drawerDate');
+const drawerHoursEl = document.getElementById('drawerHours');
+const drawerIncomeEl = document.getElementById('drawerIncome');
+const taskListEl = document.getElementById('taskList');
 
-  tabCal.onclick = ()=> showPanel('cal');
-  tabTotals.onclick = ()=> { showPanel('totals'); renderTotals(); };
-  tabProj.onclick = ()=> { showPanel('proj'); renderProjects(); };
+let anchor = new Date();
 
-  // ===== Calendar =====
-  function entriesByDate(){
-    const m = {};
-    for(const e of db.entries){ (m[e.date] ||= []).push(e); }
-    return m;
-  }
-  function projectById(){ const m={}; for(const p of db.projects){ m[p.id]=p; } return m; }
-  function sumHours(list){ return Number(list.reduce((a,b)=>a+(b.hours||0),0).toFixed(2)); }
+// Weekday header
+const weekdayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+headEl.innerHTML = weekdayNames.map(w=>`<div>${w}</div>`).join('');
 
-  function twoWeek(){
-    const start = startOfISOWeek(anchor);
-    return Array.from({length:14},(_,i)=> addDays(start,i));
-  }
+function startOfWeek(d){
+  const x = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  let day = x.getUTCDay(); // 0..6 (Sun..Sat)
+  day = (day === 0 ? 7 : day); // convert Sun->7
+  x.setUTCDate(x.getUTCDate() - (day-1)); // move to Monday
+  return new Date(x);
+}
 
-  function renderCalendar(){
-    if(!calGrid) return;
-    const days = twoWeek();
-    if(rangeText) rangeText.textContent = humanDate(days[0]) + ' – ' + humanDate(days[13]);
-    const map = entriesByDate();
-    const pmap = projectById();
-    const todayYMD = fmtYMD(new Date());
+function addDays(d, n){ const x = new Date(d); x.setDate(x.getDate()+n); return x; }
 
-    calGrid.innerHTML = '';
-    for(const d of days){
-      const ymd = fmtYMD(d);
-      const list = map[ymd] || [];
-      const total = sumHours(list);
-      const dayEl = document.createElement('div');
-      dayEl.className = 'day' + (ymd===todayYMD? ' today':'');
-      dayEl.innerHTML = `
-        <div class="daytop"><div><strong>${humanDate(d)}</strong></div><div class="muted small">${total>0? total+'h':''}</div></div>
-        <div class="list"></div>
-        <div style="margin-top:auto">
-          <button class="btn small" data-add="${ymd}">Add</button>
-        </div>
-      `;
-      const listEl = dayEl.querySelector('.list');
-      if(list.length===0){
-        const empty = document.createElement('div'); empty.className='small muted'; empty.textContent='No entries'; listEl.appendChild(empty);
-      } else {
-        for(const e of list){
-          const row = document.createElement('div');
-          row.className='entry';
-          row.innerHTML = `
-            <span class="dot" style="background:${pmap[e.projectId]?.color||'#94a3b8'}"></span>
-            <div class="grow">
-              <div class="small"><strong>${pmap[e.projectId]?.name||'Unknown'}</strong> · ${e.hours}h</div>
-              ${e.note? `<div class="small muted">${escapeHtml(e.note)}</div>`:''}
-            </div>
-            <button class="btn small" data-del="${e.id}">🗑</button>
-          `;
-          listEl.appendChild(row);
-        }
-      }
-      calGrid.appendChild(dayEl);
-    }
-
-    // Wire up per-day Add & delete buttons
-    calGrid.querySelectorAll('[data-add]').forEach(btn=>{
-      btn.addEventListener('click', ()=> openDialog(btn.getAttribute('data-add')));
-    });
-    calGrid.querySelectorAll('[data-del]').forEach(btn=>{
-      btn.addEventListener('click', ()=> { delEntry(btn.getAttribute('data-del')); renderCalendar(); });
-    });
-  }
-
-  function escapeHtml(s){ return s.replace(/[&<>"']/g, c=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c])); }
-
-  // ===== Entry Dialog =====
-  function openDialog(dateStr){
-    dlgDate.value = dateStr || fmtYMD(new Date());
-    dlgHours.value = '1';
-    dlgNote.value = '';
-    // populate projects
-    dlgProject.innerHTML = '';
-    for(const p of db.projects){ const o=document.createElement('option'); o.value=p.id; o.textContent=p.name; dlgProject.appendChild(o); }
-    entryDialog.showModal();
-  }
-  dlgCancel.onclick = ()=> entryDialog.close();
-  dlgSave.onclick = ()=>{
-    const date = dlgDate.value; const hours = Math.max(0, Number(dlgHours.value||0)); const pid = dlgProject.value; const note = dlgNote.value.trim();
-    if(!date || !pid || !Number.isFinite(hours)) return;
-    db.entries.push({ id:uid('e'), date, projectId:pid, hours:Number(hours.toFixed(2)), note: note||undefined });
-    saveDB(); entryDialog.close(); renderCalendar();
-  };
-
-  // Toolbar actions (1-week shift)
-  btnPrev.onclick = ()=> { anchor = addDays(startOfISOWeek(anchor), -7); renderCalendar(); };
-  btnNext.onclick = ()=> { anchor = addDays(startOfISOWeek(anchor), 7); renderCalendar(); };
-  btnToday.onclick = ()=> { anchor = startOfISOWeek(new Date()); renderCalendar(); };
-
-  // ===== Totals =====
-  const totStart = document.getElementById('totStart');
-  const totEnd = document.getElementById('totEnd');
-  const totOverall = document.getElementById('totOverall');
-  const totList = document.getElementById('totList');
-
-  function renderTotals(){
-    if(!totStart.value) totStart.value = fmtYMD(addDays(new Date(), -13));
-    if(!totEnd.value) totEnd.value = fmtYMD(new Date());
-    const s = parseYMD(totStart.value); const e = parseYMD(totEnd.value); e.setUTCDate(e.getUTCDate()+1);
-    const inRange = db.entries.filter(x=> { const d=parseYMD(x.date); return d>=s && d<e; });
-    const byProject = new Map();
-    for(const x of inRange){ byProject.set(x.projectId, (byProject.get(x.projectId)||0)+x.hours); }
-    const total = Number(inRange.reduce((a,b)=>a+b.hours,0).toFixed(2));
-    totOverall.textContent = total + ' h';
-
-    const pmap = projectById();
-    totList.innerHTML = '';
-    for(const [pid,hours] of byProject){
-      const card = document.createElement('div');
-      card.className = 'day';
-      card.innerHTML = `
-        <div class="tag"><span class="dot" style="background:${pmap[pid]?.color||'#94a3b8'}"></span><strong>${pmap[pid]?.name||pid}</strong></div>
-        <div class="right" style="font-size:18px;font-weight:600">${hours.toFixed(2)} h</div>
-      `;
-      totList.appendChild(card);
-    }
-  }
-  totStart.addEventListener('change', renderTotals);
-  totEnd.addEventListener('change', renderTotals);
-
-  // ===== Projects =====
-  const projName = document.getElementById('projName');
-  const projColor = document.getElementById('projColor');
-  const projAdd = document.getElementById('projAdd');
-  const projList = document.getElementById('projList');
-
-  function renderProjects(){
-    projList.innerHTML = '';
-    for(const p of db.projects){
-      const card = document.createElement('div'); card.className='day';
-      card.innerHTML = `
-        <div class="tag"><span class="dot" style="background:${p.color}"></span><strong>${p.name}</strong></div>
-        <div class="small muted" style="margin-top:6px">${p.id}</div>
-        <div class="footer" style="margin-top:auto"><button class="btn" data-delp="${p.id}">Delete</button></div>
-      `;
-      projList.appendChild(card);
-    }
-    projList.querySelectorAll('[data-delp]').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        const id = btn.getAttribute('data-delp');
-        db.projects = db.projects.filter(x=> x.id!==id);
-        db.entries = db.entries.filter(x=> x.projectId!==id);
-        saveDB(); renderProjects(); renderCalendar();
-      });
-    });
-  }
-  projAdd.onclick = ()=>{
-    const name = (projName.value||'').trim(); if(!name) return;
-    const color = projColor.value||'#22c55e';
-    db.projects.push({ id:uid('p'), name, color }); saveDB(); projName.value=''; renderProjects();
-  };
-
-  // ===== Export / Import =====
-  document.getElementById('btnExport').onclick = ()=>{
-    const blob = new Blob([JSON.stringify(db,null,2)], {type:'application/json'});
-    const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download='smart-calendar-data.json'; a.click(); URL.revokeObjectURL(url);
-  };
-  document.getElementById('importFile').addEventListener('change', (e)=>{
-    const f = e.target.files && e.target.files[0]; if(!f) return;
-    const reader = new FileReader(); reader.onload = ()=>{
-      try{ db = JSON.parse(String(reader.result)); saveDB(); renderCalendar(); renderTotals(); renderProjects(); }
-      catch{ alert('Invalid JSON'); }
-    }; reader.readAsText(f);
+function computeTotals(tasks){
+  let hours=0, income=0; const byType = new Map();
+  (tasks||[]).forEach(t=>{
+    hours += t.hours || 0;
+    const pay = (t.pay != null) ? t.pay : (t.rate||0) * (t.hours||0);
+    income += pay;
+    const key = t.title || 'Task';
+    const prev = byType.get(key) || {hours:0, income:0, color:colorFromString(key)};
+    prev.hours += (t.hours||0); prev.income += pay; byType.set(key, prev);
   });
+  return {hours, income, byType};
+}
 
-  // ===== Init =====
-  if('serviceWorker' in navigator){ window.addEventListener('load', ()=> navigator.serviceWorker.register('./sw.js')); }
-  renderCalendar();
+function render(){
+  // determine 14-day window starting from Monday of the week that holds anchor
+  const start = startOfWeek(anchor);
+  const end = addDays(start, 13);
+  sumRangeEl.textContent = `${start.toISOString().slice(0,10)} → ${end.toISOString().slice(0,10)}`;
 
-  </script>
+  // Collect legend during render
+  const legendTypes = new Map();
+
+  // Period totals
+  let pHours=0, pIncome=0, pDays=0;
+
+  gridEl.innerHTML = '';
+  for(let i=0;i<14;i++){
+    const d = addDays(start, i);
+    const key = ymd(d);
+    const entry = db[key];
+    const {hours, income, byType} = computeTotals(entry?.tasks || []);
+    if(hours>0){ pHours += hours; pIncome += income; pDays++; }
+
+    // day cell
+    const dayDiv = document.createElement('div');
+    dayDiv.className = 'day' + (ymd(new Date())===key ? ' today' : '') + (!entry?' empty':'');
+    dayDiv.dataset.date = key;
+
+    const date = document.createElement('div'); date.className='date'; date.textContent = new Date(key+'T00:00:00').getDate();
+    const total = document.createElement('div'); total.className='total'; total.textContent = hours?fmtHours(hours):'—';
+
+    const bars = document.createElement('div'); bars.className='bars';
+
+    // Make pill tags for up to 3 task types, showing hours
+    const types = [...byType.entries()].sort((a,b)=>b[1].hours - a[1].hours);
+    types.slice(0,3).forEach(([name, info])=>{
+      const pill = document.createElement('div'); pill.className='pill';
+      const dot = document.createElement('span'); dot.className='dot'; dot.style.background = info.color; pill.appendChild(dot);
+      const text = document.createElement('span'); text.textContent = `${(info.hours).toFixed(1)}h`; pill.appendChild(text);
+      bars.appendChild(pill);
+      if(!legendTypes.has(name)) legendTypes.set(name, info.color);
+    });
+    if(types.length>3){
+      const more = document.createElement('div'); more.className='pill more'; more.textContent = `+${types.length-3}`; bars.appendChild(more);
+    }
+
+    dayDiv.appendChild(date); dayDiv.appendChild(total); dayDiv.appendChild(bars);
+
+    dayDiv.addEventListener('click',()=>openDrawerForDate(key));
+    gridEl.appendChild(dayDiv);
+  }
+
+  // Update summary
+  sumHoursEl.textContent = fmtHours(pHours);
+  sumIncomeEl.textContent = fmtMoney(pIncome);
+  sumDaysEl.textContent = pDays;
+
+  // Legend
+  legendEl.innerHTML = '';
+  for(const [name, color] of legendTypes.entries()){
+    const pill = document.createElement('div'); pill.className='pill';
+    const dot = document.createElement('span'); dot.className='dot'; dot.style.background=color; pill.appendChild(dot);
+    const label = document.createElement('span'); label.textContent = name; pill.appendChild(label);
+    legendEl.appendChild(pill);
+  }
+}
+
+function openDrawerForDate(key){
+  const entry = db[key] || {tasks:[]};
+  const {hours, income} = computeTotals(entry.tasks);
+  drawerDateEl.textContent = key;
+  drawerHoursEl.textContent = fmtHours(hours);
+  drawerIncomeEl.textContent = fmtMoney(income);
+  taskListEl.innerHTML = '';
+
+  if(entry.tasks.length===0){
+    taskListEl.innerHTML = `<div class="chip">No tasks for this day.</div>`;
+  } else {
+    entry.tasks.forEach(t=>{
+      const row = document.createElement('div'); row.className='task-row';
+      const left = document.createElement('div'); left.className='left';
+      const dot = document.createElement('span'); dot.className='dot'; dot.style.background = colorFromString(t.title||'Task'); left.appendChild(dot);
+      const title = document.createElement('div'); title.innerHTML = `<strong>${t.title||'Task'}</strong><div class="k">${t.note||''}</div>`; left.appendChild(title);
+      const right = document.createElement('div');
+      const pay = (t.pay != null) ? t.pay : (t.rate||0) * (t.hours||0);
+      right.innerHTML = `<div class="money">${fmtMoney(pay)}</div><div class="k" style="text-align:right">${(t.hours||0).toFixed(2)} h @ ${fmtMoney(t.rate||0)}/h</div>`;
+      row.appendChild(left); row.appendChild(right);
+      taskListEl.appendChild(row);
+    });
+  }
+  drawer.showModal();
+}
+
+// Navigation handlers
+ document.getElementById('btnPrev').onclick = ()=>{ anchor = addDays(startOfWeek(anchor), -14); render(); };
+ document.getElementById('btnNext').onclick = ()=>{ anchor = addDays(startOfWeek(anchor), 14); render(); };
+ document.getElementById('btnToday').onclick = ()=>{ anchor = new Date(); render(); };
+
+render();
+</script>
 </body>
 </html>

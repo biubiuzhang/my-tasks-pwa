@@ -1,4 +1,4 @@
-const VERSION = 'v1.0.9';
+const VERSION = 'v2.0.0';
 const APP_SHELL = [
   './',
   './index.html',
