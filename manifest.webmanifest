@@ -3,8 +3,8 @@
   "short_name": "米妮的待办",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#0b0f14",
-  "theme_color": "#facc15",
+  "background_color": "#ffffff",
+  "theme_color": "#f2f2f7",
   "icons": [
     { "src": "icons/feng.png", "sizes": "192x192", "type": "image/png" },
     { "src": "icons/feng.png", "sizes": "512x512", "type": "image/png" },
